@@ -109,7 +109,19 @@ if (BUILD_OPENSSL)
         DEPENDERS configure
         ALWAYS ON
     )
+else()
+    ExternalProject_Add(openssl
+            GIT_REPOSITORY git://git.openssl.org/openssl.git
+            GIT_TAG ${OPENSSL_BRANCH}
+
+            UPDATE_COMMAND ""
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND ""
+            INSTALL_COMMAND ""
+            TEST_COMMAND ""
+    )
 endif()
+
 
 add_library(ssl STATIC IMPORTED GLOBAL)
 add_library(crypto STATIC IMPORTED GLOBAL)
