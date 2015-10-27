@@ -30,7 +30,7 @@ if (NOT GIT_FOUND)
     message(FATAL_ERROR "Please specify git path")
 endif()
 
-find_package(PythonInterp REQUIRED)
+find_package(PythonInterp 3 REQUIRED)       # use Python 3 - Python2 is not compatible!
 
 include(ExternalProject)
 if (BUILD_OPENSSL)
