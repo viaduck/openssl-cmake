@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.3)
 
 set(OPENSSL_BRANCH OpenSSL_1_0_2d)
 set(NUM_JOBS 5)
-set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
 
 set(OS "UNIX")
 
@@ -127,5 +126,17 @@ add_library(ssl STATIC IMPORTED GLOBAL)
 add_library(crypto STATIC IMPORTED GLOBAL)
 set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
 set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
+
+find_library(openssl_imported NAMES ssl crypto
+    PATHS ${CMAKE_CURRENT_BINARY_DIR}/lib/
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/
+    NO_DEFAULT_PATH)
+if (openssl_imported-NOTFOUND)
+    message(WARNING "OpenSSL build not found - Compiling")
+    set(BUILD_OPENSSL ON CACHE BOOL "Automated OpenSSL building" FORCE)
+else()
+    message(STATUS "Compiled OpenSSL build found")
+    set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building" FORCE)
+endif()
 add_dependencies(ssl openssl)
 add_dependencies(crypto openssl)
