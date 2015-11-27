@@ -4,10 +4,11 @@ stages:
     - build         # contains build and test
     - deploy
     
-openssl-building:
+openssl-x86_64:
     script:
         - cmake . -DBUILD_OPENSSL=ON
         - make
+        - scripts/commit_result.sh x86_64 OpenSSL_1_0_2d
     stage: build
     only:
         - master
