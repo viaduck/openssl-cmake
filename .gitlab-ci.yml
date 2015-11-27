@@ -1,0 +1,13 @@
+image: debian:openssl-build
+
+stages:
+    - build         # contains build and test
+    - deploy
+    
+openssl-building:
+    script:
+        - cmake . -DBUILD_OPENSSL=ON
+        - make
+    stage: build
+    only:
+        - master

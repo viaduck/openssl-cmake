@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.0)
 
 set(OPENSSL_BRANCH OpenSSL_1_0_2d)
 set(NUM_JOBS 5)
