@@ -8,7 +8,7 @@ openssl-x86_64:
     script:
         - cmake . -DBUILD_OPENSSL=ON
         - make
-        - scripts/commit_result.sh x86_64 OpenSSL_1_0_2d
+        - scripts/commit_result.sh x86_64-linux OpenSSL_1_0_2d
     stage: build
     only:
         - master
