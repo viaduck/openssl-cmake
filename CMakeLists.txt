@@ -61,7 +61,7 @@ if (BUILD_OPENSSL)
     else()      # detect host system automatically
         set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines
         no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso)
-        set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_TEST})
+        set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} test)
     endif()
 
     ExternalProject_Add(openssl
