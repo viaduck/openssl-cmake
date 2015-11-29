@@ -14,5 +14,5 @@ cp -R ../$2/include $1
 cp -R ../$2/ssl $1
 
 git add $1
-git commit -m "Automatically built by slave ($BUILD_OPENSSL_VERSION)" > /dev/null
+git commit -m "Automatically built by slave ($OPENSSL_BRANCH)" > /dev/null
 git push --set-upstream origin $1
