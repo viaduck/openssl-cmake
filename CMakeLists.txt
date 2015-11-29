@@ -1,11 +1,18 @@
 cmake_minimum_required(VERSION 3.0)
 
-set(OPENSSL_BRANCH OpenSSL_1_0_2d)
+set(OPENSSL_BRANCH OFF CACHE STRING "OpenSSL branch (or tag) to build")
+set(CROSS OFF CACHE BOOL "Cross-compiling?")
+set(CROSS_TARGET OFF CACHE STRING "Cross-compilation target")
+
+if (NOT OPENSSL_BRANCH)
+    message(FATAL_ERROR "You must specify OPENSSL_BRANCH!")
+endif()
+
 set(NUM_JOBS 5)
 
 set(OS "UNIX")
 
-if (WIN32)
+if (WIN32 AND NOT CROSS)
     # yep, windows need a special treatment, but neither cygwin nor msys, since they provide an UNIX-like environment
     if (MINGW)
         message(WARNING "Building on windows might fail")
@@ -41,10 +48,20 @@ if (BUILD_OPENSSL)
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
 
     # on windows we need to replace path to perl since CreateProcess(..) cannot handle unix paths
-    if (WIN32)
+    if (WIN32 AND NOT CROSS)
         set(PERL_PATH_FIX_INSTALL sed -i -- 's/\\/usr\\/bin\\/perl/perl/g' Makefile)
     else()
         set(PERL_PATH_FIX_INSTALL true)
+    endif()
+    
+    # cross-compiling
+    if (CROSS)
+        set(COMMAND_CONFIGURE CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ./Configure --prefix=${CMAKE_CURRENT_BINARY_DIR} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso)
+        set(COMMAND_TEST "true")
+    else()      # detect host system automatically
+        set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines
+        no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso)
+        set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_TEST})
     endif()
 
     ExternalProject_Add(openssl
@@ -53,21 +70,18 @@ if (BUILD_OPENSSL)
 
         UPDATE_COMMAND ""
 
-        CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines
-        no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso
+        CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
         # no-dsa no-rc2 no-des break tests, therefore we need them
 
         BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} depend
         COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} -j ${NUM_JOBS}
 
         TEST_BEFORE_INSTALL 1
-        TEST_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} test
+        TEST_COMMAND ${COMMAND_TEST}
 
         INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
         COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} install
 
-        LOG_CONFIGURE 1
-        LOG_BUILD 1
         LOG_TEST 1
         LOG_INSTALL 1
     )

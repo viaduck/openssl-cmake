@@ -3,12 +3,47 @@ image: debian:openssl-build
 stages:
     - build         # contains build and test
     - deploy
+
+variables:
+    OPENSSL_BRANCH: "OpenSSL_1_0_2d"
+    PREBUILTS_REPO: "https://$GIT_USER:$GIT_PASSWORD@gl.viaduck.org/viaduck/openssl-prebuilts.git"
     
-openssl-x86_64:
+linux-x86_64:
     script:
-        - cmake . -DBUILD_OPENSSL=ON
+        - mkdir build-linux-x86_64
+        - cd build-linux-x86_64
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH
         - make
-        - scripts/commit_result.sh x86_64-linux OpenSSL_1_0_2d
     stage: build
+    only:
+        - master
+
+windows-x86:
+    script:
+        - mkdir build-windows-x86
+        - cd build-windows-x86
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS=ON -DCROSS_PREFIX=i686-w64-mingw32- -DCROSS_TARGET=mingw
+        - make
+    stage: build
+    only:
+        - master
+
+windows-x86_64:
+    script:
+        - mkdir build-windows-x86_64
+        - cd build-windows-x86_64
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS=ON -DCROSS_PREFIX=x86_64-w64-mingw32- -DCROSS_TARGET=mingw64
+        - make
+    stage: build
+    only:
+        - master
+
+upload-to-prebuilts:
+    script:
+        - git clone $PREBUILTS_REPO
+        - scripts/commit_result.sh x86_64-linux build-linux-x86_64
+        - scripts/commit_result.sh i686-w64-mingw32 build-windows-x86
+        - scripts/commit_result.sh x86_64-w64-mingw32 build-windows-x86_64
+    stage: deploy
     only:
         - master
