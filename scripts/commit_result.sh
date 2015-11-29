@@ -1,6 +1,7 @@
 #!/bin/bash
 # usage: <architecture> <directory>
 
+git clone $PREBUILTS_REPO
 cd openssl-prebuilts
 git checkout master
 git branch $1

@@ -1,8 +1,7 @@
 image: debian:openssl-build
 
 stages:
-    - build         # contains build and test
-    - deploy
+    - build         # contains build and test and deploy
 
 variables:
     OPENSSL_BRANCH: "OpenSSL_1_0_2d"
@@ -14,6 +13,7 @@ linux-x86_64:
         - cd build-linux-x86_64
         - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH
         - make
+        - scripts/commit_result.sh x86_64-linux build-linux-x86_64
     stage: build
     only:
         - master
@@ -24,6 +24,7 @@ windows-x86:
         - cd build-windows-x86
         - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS=ON -DCROSS_PREFIX=i686-w64-mingw32- -DCROSS_TARGET=mingw
         - make
+        - scripts/commit_result.sh i686-w64-mingw32 build-windows-x86
     stage: build
     only:
         - master
@@ -34,16 +35,7 @@ windows-x86_64:
         - cd build-windows-x86_64
         - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS=ON -DCROSS_PREFIX=x86_64-w64-mingw32- -DCROSS_TARGET=mingw64
         - make
-    stage: build
-    only:
-        - master
-
-upload-to-prebuilts:
-    script:
-        - git clone $PREBUILTS_REPO
-        - scripts/commit_result.sh x86_64-linux build-linux-x86_64
-        - scripts/commit_result.sh i686-w64-mingw32 build-windows-x86
         - scripts/commit_result.sh x86_64-w64-mingw32 build-windows-x86_64
-    stage: deploy
+    stage: build
     only:
         - master
