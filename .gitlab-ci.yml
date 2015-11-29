@@ -13,6 +13,7 @@ linux-x86_64:
         - cd build-linux-x86_64
         - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH
         - make
+        - cd ..
         - scripts/commit_result.sh x86_64-linux build-linux-x86_64
     stage: build
     only:
@@ -24,6 +25,7 @@ windows-x86:
         - cd build-windows-x86
         - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS=ON -DCROSS_PREFIX=i686-w64-mingw32- -DCROSS_TARGET=mingw
         - make
+        - cd ..
         - scripts/commit_result.sh i686-w64-mingw32 build-windows-x86
     stage: build
     only:
@@ -35,6 +37,7 @@ windows-x86_64:
         - cd build-windows-x86_64
         - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS=ON -DCROSS_PREFIX=x86_64-w64-mingw32- -DCROSS_TARGET=mingw64
         - make
+        - cd ..
         - scripts/commit_result.sh x86_64-w64-mingw32 build-windows-x86_64
     stage: build
     only:
