@@ -9,10 +9,6 @@ if (NOT OPENSSL_BRANCH)
     message(FATAL_ERROR "You must specify OPENSSL_BRANCH!")
 endif()
 
-if(NOT PREBUILT_BRANCH)
-    message(FATAL_ERROR "You shall not pass! (at least not without setting PREBUILT_BRANCH first..)")
-endif()
-
 set(NUM_JOBS 5)
 
 set(OS "UNIX")
@@ -132,6 +128,11 @@ if(BUILD_OPENSSL)
     set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
     set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
 else(BUILD_OPENSSL)
+    # using openssl prebuilts
+    if(NOT PREBUILT_BRANCH)
+        message(FATAL_ERROR "You shall not pass! (at least not without setting PREBUILT_BRANCH first..)")
+    endif()
+    
     ExternalProject_Add(openssl
             GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
             GIT_TAG ${PREBUILT_BRANCH}
