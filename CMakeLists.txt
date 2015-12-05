@@ -5,10 +5,6 @@ set(CROSS OFF CACHE BOOL "Cross-compiling?")
 set(CROSS_TARGET OFF CACHE STRING "Cross-compilation target")
 set(PREBUILT_BRANCH OFF CACHE STRING "Branch in OpenSSL-Prebuilts to checkout from")
 
-if (NOT OPENSSL_BRANCH)
-    message(FATAL_ERROR "You must specify OPENSSL_BRANCH!")
-endif()
-
 set(NUM_JOBS 5)
 
 set(OS "UNIX")
@@ -24,6 +20,10 @@ add_library(ssl STATIC IMPORTED GLOBAL)
 add_library(crypto STATIC IMPORTED GLOBAL)
 
 if(BUILD_OPENSSL)
+    if (NOT OPENSSL_BRANCH)
+        message(FATAL_ERROR "You must specify OPENSSL_BRANCH!")
+    endif()
+    
     if (WIN32 AND NOT CROSS)
         # yep, windows need a special treatment, but neither cygwin nor msys, since they provide an UNIX-like environment
         if (MINGW)
