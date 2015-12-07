@@ -28,10 +28,23 @@ if os_s == "WIN32":
     env['PATH'] = ";".join([msys_path, mingw_path])+";"+env['PATH']
     env['MAKEFLAGS'] = ''            # otherwise: internal error: invalid --jobserver-fds string `gmake_semaphore_1824'
 
+
 binary_openssl_dir_source = argv[offset]+"/"             # downloaded openssl source dir
 l.extend(argv[offset+1:])                             # routed commands
 
 l[0] = '"'+l[0]+'"'
+
+# read environment from file if cross-compiling
+if os_s == "LINUX_CROSS_ANDROID":
+    f = open(binary_openssl_dir_source+"/../../../buildenv.txt", "r")
+    for line in f:
+        k, v = line.split("=", 1)
+        v = v.replace("\n", "")
+        if k != "PATH":
+            env[k] = v.replace('"', '')
+        else:
+            env[k] = v.replace('"', '')+":"+env[k]
+    f.close()
 
 proc = None
 if os_s == "WIN32":

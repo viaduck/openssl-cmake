@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 
+set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
 set(OPENSSL_BRANCH OFF CACHE STRING "OpenSSL branch (or tag) to build")
+set(CROSS_ANDROID OFF CACHE BOOL "Cross-compiling for Android?")
 set(CROSS OFF CACHE BOOL "Cross-compiling?")
 set(CROSS_TARGET OFF CACHE STRING "Cross-compilation target")
 set(PREBUILT_BRANCH OFF CACHE STRING "Branch in OpenSSL-Prebuilts to checkout from")
@@ -47,8 +49,6 @@ if(BUILD_OPENSSL)
     execute_process(COMMAND ${GIT_EXECUTABLE} config --global --get core.autocrlf OUTPUT_VARIABLE GIT_CORE_AUTOCRLF OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${GIT_EXECUTABLE} config --global --get core.eol OUTPUT_VARIABLE GIT_CORE_EOL OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    # python helper script for corrent building environment
-    set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
 
     # on windows we need to replace path to perl since CreateProcess(..) cannot handle unix paths
     if (WIN32 AND NOT CROSS)
@@ -57,13 +57,110 @@ if(BUILD_OPENSSL)
         set(PERL_PATH_FIX_INSTALL true)
     endif()
     
+    # CROSS and CROSS_ANDROID cannot both be set (because of internal reasons)
+    if (CROSS AND CROSS_ANDROID)
+        # if user set CROSS_ANDROID and CROSS we assume we wants CROSS_ANDROID, so set CROSS to OFF
+        set(CROSS OFF)
+    endif()
+    
+    if (CROSS_ANDROID)
+        set(OS "LINUX_CROSS_ANDROID")
+    endif()
+    
+    # python helper script for corrent building environment
+    set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
+
+    # no-dsa no-rc2 no-des break tests, therefore we need them
+    set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso)
+    
     # cross-compiling
     if (CROSS)
-        set(COMMAND_CONFIGURE CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ./Configure --prefix=${CMAKE_CURRENT_BINARY_DIR} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso)
+        set(COMMAND_CONFIGURE ./Configure --prefix=${CMAKE_CURRENT_BINARY_DIR} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES})
         set(COMMAND_TEST "true")
-    else()      # detect host system automatically
-        set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines
-        no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso)
+    elseif(CROSS_ANDROID)
+        # The following code is an adapted version of OpenSSL's Setenv-android.sh
+        # Original contents are licensed under the terms of the OpenSSL license
+        # http://www.openssl.org/source/license.html
+        # ####################################
+
+        # cache variables
+        set(ANDROID_NDK "" CACHE STRING "Android NDK directory (for auto discovery)")
+        set(ANDROID_NDK_ROOT "" CACHE STRING "Android NDK root directory")
+        set(ANDROID_EABI "" CACHE STRING "Android EABI (see ANDROID_NDK_ROOT/toolchains for a list of possible values)")
+        set(ANDROID_ARCH "" CACHE STRING "Android architecture (e.g. arch-arm, arch-x86, ...)")
+        set(ANDROID_API "" CACHE STRING "Android API to build against (e.g. android-19)")
+        set(ANDROID_MACHINE "" CACHE STRING "Android machine (e.g. armv7, i686)")
+        
+        
+        if (NOT ANDROID_NDK AND NOT ANDROID_NDK_ROOT)
+            message(FATAL_ERROR "Please specify ANDROID_NDK (for auto discovery) or ANDROID_NDK_ROOT (manual path)")
+        endif()
+        if (NOT ANDROID_EABI)
+            message(FATAL_ERROR "Please specify ANDROID_EABI")
+        endif()
+        if (NOT ANDROID_ARCH)
+            message(FATAL_ERROR "Please specify ANDROID_ARCH")
+        endif()
+        if (NOT ANDROID_API)
+            message(FATAL_ERROR "Please specify ANDROID_API")
+        endif()
+        if (NOT ANDROID_MACHINE)
+            message(FATAL_ERROR "Please specify ANDROID_MACHINE")
+        endif()
+        
+        # try detecting ANDROID_NDK_ROOT
+        if (NOT ANDROID_NDK_ROOT)
+            if (EXISTS "/usr/local/${ANDROID_NDK}")
+                set(ANDROID_NDK_ROOT "/usr/local/${ANDROID_NDK}")
+            endif()
+            if (EXISTS "/opt/${ANDROID_NDK}")
+                set(ANDROID_NDK_ROOT "/opt/${ANDROID_NDK}")
+            endif()
+            if (EXISTS "ENV${HOME}/${ANDROID_NDK}")
+                set(ANDROID_NDK_ROOT "ENV${HOME}/${ANDROID_NDK}")
+            endif()
+            if (EXISTS "ENV${PWD}/${ANDROID_NDK}")
+                set(ANDROID_NDK_ROOT "ENV${PWD}/${ANDROID_NDK}")
+            endif()
+        endif()
+        
+        if (NOT ANDROID_NDK_ROOT)
+            message(FATAL_ERROR "Android NDK root directory not found!")
+        endif()
+        
+        if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains")
+            message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains not found!")
+        endif()
+        
+        if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}")
+            message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI} not found!")
+        endif()
+        
+        ###       
+        set(ANDROID_TOOLCHAIN "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}/prebuilt/linux-x86_64/bin")
+        set(PATH ${ANDROID_TOOLCHAIN})
+        set(ANDROID_SYSROOT ${ANDROID_NDK_ROOT}/platforms/${ANDROID_API}/${ANDROID_ARCH})
+        set(ANDROID_NDK_SYSROOT ${ANDROID_SYSROOT})
+        set(NDK_SYSROOT ${ANDROID_SYSROOT})
+        set(SYSROOT ${ANDROID_SYSROOT})
+        if (ANDROID_ARCH MATCHES "arch-arm")
+            set(IF_EABI "eabi")
+            set(ARCH "arm")
+        else()
+            set(ARCH "x86")
+        endif()
+        set(MACHINE ${ANDROID_MACHINE})
+        set(SYSTEM android)
+        # for OpenSSL
+        set(CROSS_COMPILE "${ARCH}-linux-android${IF_EABI}-")
+        set(ANDROID_DEV ${ANDROID_SYSROOT}/usr)
+        set(HOSTCC gcc) #${CMAKE_C_COMPILER})
+        set(RELEASE "2.6.37")
+        
+        set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
+        set(COMMAND_TEST "true")
+    else()                   # detect host system automatically
+        set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
         set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} test)
     endif()
 
@@ -74,8 +171,7 @@ if(BUILD_OPENSSL)
         UPDATE_COMMAND ""
 
         CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
-        # no-dsa no-rc2 no-des break tests, therefore we need them
-
+        
         BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} depend
         COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} -j ${NUM_JOBS}
 
@@ -125,6 +221,16 @@ if(BUILD_OPENSSL)
         DEPENDERS configure
         ALWAYS ON
     )
+    
+    # write environment to file, is picked up by python script
+    get_cmake_property(_variableNames VARIABLES)
+    foreach (_variableName ${_variableNames})
+        if (NOT _variableName MATCHES "lines")
+            set(OUT_FILE "${OUT_FILE}${_variableName}=\"${${_variableName}}\"\n")
+        endif()
+    endforeach()
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt ${OUT_FILE})
+    
     set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
     set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
 else(BUILD_OPENSSL)
