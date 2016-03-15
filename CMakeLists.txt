@@ -234,11 +234,6 @@ if(BUILD_OPENSSL)
     set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
     set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
 else(BUILD_OPENSSL)
-    # using openssl prebuilts
-    if(NOT PREBUILT_BRANCH)
-        message(FATAL_ERROR "You shall not pass! (at least not without setting PREBUILT_BRANCH first..)")
-    endif()
-    
     ExternalProject_Add(openssl
             GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
             GIT_TAG ${PREBUILT_BRANCH}
@@ -249,20 +244,19 @@ else(BUILD_OPENSSL)
             INSTALL_COMMAND ""
             TEST_COMMAND ""
     )
-    set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libssl.a)
-    set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libcrypto.a)
+    if (PREBUILT_BRANCH)
+        # set library locations if prebuilt branch specified
+        set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libssl.a)
+        set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libcrypto.a)
+    else()
+        # try to use locations of alredy built libraries (using BUILD_OPENSSL)
+        if ((NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a) OR (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a))
+            message(FATAL_ERROR "OpenSSL libraries not found. Either build them (with BUILD_OPENSSL) or use prebuilts (set PREBUILT_BRANCH).")
+        endif()
+        set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
+        set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
+    endif()
 endif(BUILD_OPENSSL)
 
-find_library(openssl_imported NAMES ssl crypto
-    PATHS ${CMAKE_CURRENT_BINARY_DIR}/lib/
-        ${CMAKE_CURRENT_BINARY_DIR}/lib/
-    NO_DEFAULT_PATH)
-if (openssl_imported-NOTFOUND)
-    message(WARNING "OpenSSL build not found - Compiling")
-    set(BUILD_OPENSSL ON CACHE BOOL "Automated OpenSSL building" FORCE)
-else()
-    message(STATUS "Compiled OpenSSL build found")
-    set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
-endif()
 add_dependencies(ssl openssl)
 add_dependencies(crypto openssl)
