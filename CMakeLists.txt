@@ -17,246 +17,250 @@ endif()
 
 find_package(PythonInterp 3 REQUIRED)       # use Python 3 - Python2 is not compatible!
 
-include(ExternalProject)
-add_library(ssl STATIC IMPORTED GLOBAL)
-add_library(crypto STATIC IMPORTED GLOBAL)
+if (SYSTEM_OPENSSL)
+    find_package(OpenSSL REQUIRED)
+else()
+    include(ExternalProject)
+    add_library(ssl STATIC IMPORTED GLOBAL)
+    add_library(crypto STATIC IMPORTED GLOBAL)
 
-if(BUILD_OPENSSL)
-    if (NOT OPENSSL_BRANCH)
-        message(FATAL_ERROR "You must specify OPENSSL_BRANCH!")
-    endif()
-    
-    if (WIN32 AND NOT CROSS)
-        # yep, windows need a special treatment, but neither cygwin nor msys, since they provide an UNIX-like environment
-        if (MINGW)
-            message(WARNING "Building on windows might fail")
-            set(OS "WIN32")
-            find_program(MSYS_BASH "bash.exe" PATHS "C:/Msys/" "C:/MinGW/msys/" PATH_SUFFIXES "/1.0/bin/" "/bin/"
-                    DOC "Path to MSYS installation")
-            if (NOT MSYS_BASH)
-                message(FATAL_ERROR "Specify MSYS installation path")
-            endif(NOT MSYS_BASH)
-            message(WARNING "I assume your make program is a sibling of your compiler (resides in same directory)")
-            set(MINGW_MAKE ${CMAKE_MAKE_PROGRAM})
-        elseif(NOT (CYGWIN OR MSYS))
-            message(FATAL_ERROR "Unsupported compiler infrastructure")
-        endif(MINGW)
-    elseif(NOT UNIX)
-        message(FATAL_ERROR "Unsupported platform, sorry")
-    endif()
+    if(BUILD_OPENSSL)
+        if (NOT OPENSSL_BRANCH)
+            message(FATAL_ERROR "You must specify OPENSSL_BRANCH!")
+        endif()
 
-    # save old git values for core.autocrlf and core.eol
-    execute_process(COMMAND ${GIT_EXECUTABLE} config --global --get core.autocrlf OUTPUT_VARIABLE GIT_CORE_AUTOCRLF OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${GIT_EXECUTABLE} config --global --get core.eol OUTPUT_VARIABLE GIT_CORE_EOL OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if (WIN32 AND NOT CROSS)
+            # yep, windows need a special treatment, but neither cygwin nor msys, since they provide an UNIX-like environment
+            if (MINGW)
+                message(WARNING "Building on windows might fail")
+                set(OS "WIN32")
+                find_program(MSYS_BASH "bash.exe" PATHS "C:/Msys/" "C:/MinGW/msys/" PATH_SUFFIXES "/1.0/bin/" "/bin/"
+                        DOC "Path to MSYS installation")
+                if (NOT MSYS_BASH)
+                    message(FATAL_ERROR "Specify MSYS installation path")
+                endif(NOT MSYS_BASH)
+                message(WARNING "I assume your make program is a sibling of your compiler (resides in same directory)")
+                set(MINGW_MAKE ${CMAKE_MAKE_PROGRAM})
+            elseif(NOT (CYGWIN OR MSYS))
+                message(FATAL_ERROR "Unsupported compiler infrastructure")
+            endif(MINGW)
+        elseif(NOT UNIX)
+            message(FATAL_ERROR "Unsupported platform, sorry")
+        endif()
+
+        # save old git values for core.autocrlf and core.eol
+        execute_process(COMMAND ${GIT_EXECUTABLE} config --global --get core.autocrlf OUTPUT_VARIABLE GIT_CORE_AUTOCRLF OUTPUT_STRIP_TRAILING_WHITESPACE)
+        execute_process(COMMAND ${GIT_EXECUTABLE} config --global --get core.eol OUTPUT_VARIABLE GIT_CORE_EOL OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 
-    # on windows we need to replace path to perl since CreateProcess(..) cannot handle unix paths
-    if (WIN32 AND NOT CROSS)
-        set(PERL_PATH_FIX_INSTALL sed -i -- 's/\\/usr\\/bin\\/perl/perl/g' Makefile)
-    else()
-        set(PERL_PATH_FIX_INSTALL true)
-    endif()
-    
-    # CROSS and CROSS_ANDROID cannot both be set (because of internal reasons)
-    if (CROSS AND CROSS_ANDROID)
-        # if user set CROSS_ANDROID and CROSS we assume we wants CROSS_ANDROID, so set CROSS to OFF
-        set(CROSS OFF)
-    endif()
-    
-    if (CROSS_ANDROID)
-        set(OS "LINUX_CROSS_ANDROID")
-    endif()
-    
-    # python helper script for corrent building environment
-    set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
-
-    # no-dsa no-rc2 no-des break tests, therefore we need them
-    set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso)
-    
-    # cross-compiling
-    if (CROSS)
-        set(COMMAND_CONFIGURE ./Configure --prefix=${CMAKE_CURRENT_BINARY_DIR} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES})
-        set(COMMAND_TEST "true")
-    elseif(CROSS_ANDROID)
-        # The following code is an adapted version of OpenSSL's Setenv-android.sh
-        # Original contents are licensed under the terms of the OpenSSL license
-        # http://www.openssl.org/source/license.html
-        # ####################################
-
-        # cache variables
-        set(ANDROID_NDK "" CACHE STRING "Android NDK directory (for auto discovery)")
-        set(ANDROID_NDK_ROOT "" CACHE STRING "Android NDK root directory")
-        set(ANDROID_EABI "" CACHE STRING "Android EABI (see ANDROID_NDK_ROOT/toolchains for a list of possible values)")
-        set(ANDROID_ARCH "" CACHE STRING "Android architecture (e.g. arch-arm, arch-x86, ...)")
-        set(ANDROID_API "" CACHE STRING "Android API to build against (e.g. android-19)")
-        set(ANDROID_MACHINE "" CACHE STRING "Android machine (e.g. armv7, i686)")
-        
-        
-        if (NOT ANDROID_NDK AND NOT ANDROID_NDK_ROOT)
-            message(FATAL_ERROR "Please specify ANDROID_NDK (for auto discovery) or ANDROID_NDK_ROOT (manual path)")
-        endif()
-        if (NOT ANDROID_EABI)
-            message(FATAL_ERROR "Please specify ANDROID_EABI")
-        endif()
-        if (NOT ANDROID_ARCH)
-            message(FATAL_ERROR "Please specify ANDROID_ARCH")
-        endif()
-        if (NOT ANDROID_API)
-            message(FATAL_ERROR "Please specify ANDROID_API")
-        endif()
-        if (NOT ANDROID_MACHINE)
-            message(FATAL_ERROR "Please specify ANDROID_MACHINE")
-        endif()
-        
-        # try detecting ANDROID_NDK_ROOT
-        if (NOT ANDROID_NDK_ROOT)
-            if (EXISTS "/usr/local/${ANDROID_NDK}")
-                set(ANDROID_NDK_ROOT "/usr/local/${ANDROID_NDK}")
-            endif()
-            if (EXISTS "/opt/${ANDROID_NDK}")
-                set(ANDROID_NDK_ROOT "/opt/${ANDROID_NDK}")
-            endif()
-            if (EXISTS "ENV${HOME}/${ANDROID_NDK}")
-                set(ANDROID_NDK_ROOT "ENV${HOME}/${ANDROID_NDK}")
-            endif()
-            if (EXISTS "ENV${PWD}/${ANDROID_NDK}")
-                set(ANDROID_NDK_ROOT "ENV${PWD}/${ANDROID_NDK}")
-            endif()
-        endif()
-        
-        if (NOT ANDROID_NDK_ROOT)
-            message(FATAL_ERROR "Android NDK root directory not found!")
-        endif()
-        
-        if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains")
-            message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains not found!")
-        endif()
-        
-        if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}")
-            message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI} not found!")
-        endif()
-        
-        ###       
-        set(ANDROID_TOOLCHAIN "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}/prebuilt/linux-x86_64/bin")
-        set(PATH ${ANDROID_TOOLCHAIN})
-        set(ANDROID_SYSROOT ${ANDROID_NDK_ROOT}/platforms/${ANDROID_API}/${ANDROID_ARCH})
-        set(ANDROID_NDK_SYSROOT ${ANDROID_SYSROOT})
-        set(NDK_SYSROOT ${ANDROID_SYSROOT})
-        set(SYSROOT ${ANDROID_SYSROOT})
-        if (ANDROID_ARCH MATCHES "arch-arm")
-            set(IF_EABI "eabi")
-            set(ARCH "arm")
+        # on windows we need to replace path to perl since CreateProcess(..) cannot handle unix paths
+        if (WIN32 AND NOT CROSS)
+            set(PERL_PATH_FIX_INSTALL sed -i -- 's/\\/usr\\/bin\\/perl/perl/g' Makefile)
         else()
-            set(ARCH "x86")
+            set(PERL_PATH_FIX_INSTALL true)
         endif()
-        set(MACHINE ${ANDROID_MACHINE})
-        set(SYSTEM android)
-        # for OpenSSL
-        set(CROSS_COMPILE "${ARCH}-linux-android${IF_EABI}-")
-        set(ANDROID_DEV ${ANDROID_SYSROOT}/usr)
-        set(HOSTCC gcc) #${CMAKE_C_COMPILER})
-        set(RELEASE "2.6.37")
-        
-        set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
-        set(COMMAND_TEST "true")
-    else()                   # detect host system automatically
-        set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
-        set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} test)
-    endif()
 
-    ExternalProject_Add(openssl
-        GIT_REPOSITORY git://git.openssl.org/openssl.git
-        GIT_TAG ${OPENSSL_BRANCH}
-
-        UPDATE_COMMAND ""
-
-        CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
-        
-        BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} depend
-        COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} -j ${NUM_JOBS}
-
-        TEST_BEFORE_INSTALL 1
-        TEST_COMMAND ${COMMAND_TEST}
-
-        INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-        COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} install
-
-        LOG_TEST 1
-        LOG_INSTALL 1
-    )
-
-    # set git config values to openssl requirements (no impact on linux though)
-    ExternalProject_Add_Step(openssl setGitConfig
-        COMMAND ${GIT_EXECUTABLE} config --global core.autocrlf false
-        COMMAND ${GIT_EXECUTABLE} config --global core.eol lf
-        DEPENDEES
-        DEPENDERS download
-        ALWAYS ON
-    )
-
-    # set, don't abort if it fails (due to variables being empty). To realize this we must only call git if the configs
-    # are set globally, otherwise do a no-op command ("echo 1", since "true" is not available everywhere)
-    if (GIT_CORE_AUTOCRLF)
-        set (GIT_CORE_AUTOCRLF_CMD ${GIT_EXECUTABLE} config --global core.autocrlf ${GIT_CORE_AUTOCRLF})
-    else()
-        set (GIT_CORE_AUTOCRLF_CMD echo)
-    endif()
-    if (GIT_CORE_EOL)
-        set (GIT_CORE_EOL_CMD ${GIT_EXECUTABLE} config --global core.eol ${GIT_CORE_EOL})
-    else()
-        set (GIT_CORE_EOL_CMD echo)
-    endif()
-    ##
-
-    # set git config values to previous values
-    ExternalProject_Add_Step(openssl restoreGitConfig
-    # unset first (is required, since old value could be omitted, which wouldn't take any effect in "set"
-        COMMAND ${GIT_EXECUTABLE} config --global --unset core.autocrlf
-        COMMAND ${GIT_EXECUTABLE} config --global --unset core.eol
-
-        COMMAND ${GIT_CORE_AUTOCRLF_CMD}
-        COMMAND ${GIT_CORE_EOL_CMD}
-
-        DEPENDEES download
-        DEPENDERS configure
-        ALWAYS ON
-    )
-    
-    # write environment to file, is picked up by python script
-    get_cmake_property(_variableNames VARIABLES)
-    foreach (_variableName ${_variableNames})
-        if (NOT _variableName MATCHES "lines")
-            set(OUT_FILE "${OUT_FILE}${_variableName}=\"${${_variableName}}\"\n")
+        # CROSS and CROSS_ANDROID cannot both be set (because of internal reasons)
+        if (CROSS AND CROSS_ANDROID)
+            # if user set CROSS_ANDROID and CROSS we assume we wants CROSS_ANDROID, so set CROSS to OFF
+            set(CROSS OFF)
         endif()
-    endforeach()
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt ${OUT_FILE})
-    
-    set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
-    set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
-else(BUILD_OPENSSL)
-    ExternalProject_Add(openssl
-            GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
-            GIT_TAG ${PREBUILT_BRANCH}
+
+        if (CROSS_ANDROID)
+            set(OS "LINUX_CROSS_ANDROID")
+        endif()
+
+        # python helper script for corrent building environment
+        set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
+
+        # no-dsa no-rc2 no-des break tests, therefore we need them
+        set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso)
+
+        # cross-compiling
+        if (CROSS)
+            set(COMMAND_CONFIGURE ./Configure --prefix=${CMAKE_CURRENT_BINARY_DIR} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES})
+            set(COMMAND_TEST "true")
+        elseif(CROSS_ANDROID)
+            # The following code is an adapted version of OpenSSL's Setenv-android.sh
+            # Original contents are licensed under the terms of the OpenSSL license
+            # http://www.openssl.org/source/license.html
+            # ####################################
+
+            # cache variables
+            set(ANDROID_NDK "" CACHE STRING "Android NDK directory (for auto discovery)")
+            set(ANDROID_NDK_ROOT "" CACHE STRING "Android NDK root directory")
+            set(ANDROID_EABI "" CACHE STRING "Android EABI (see ANDROID_NDK_ROOT/toolchains for a list of possible values)")
+            set(ANDROID_ARCH "" CACHE STRING "Android architecture (e.g. arch-arm, arch-x86, ...)")
+            set(ANDROID_API "" CACHE STRING "Android API to build against (e.g. android-19)")
+            set(ANDROID_MACHINE "" CACHE STRING "Android machine (e.g. armv7, i686)")
+
+
+            if (NOT ANDROID_NDK AND NOT ANDROID_NDK_ROOT)
+                message(FATAL_ERROR "Please specify ANDROID_NDK (for auto discovery) or ANDROID_NDK_ROOT (manual path)")
+            endif()
+            if (NOT ANDROID_EABI)
+                message(FATAL_ERROR "Please specify ANDROID_EABI")
+            endif()
+            if (NOT ANDROID_ARCH)
+                message(FATAL_ERROR "Please specify ANDROID_ARCH")
+            endif()
+            if (NOT ANDROID_API)
+                message(FATAL_ERROR "Please specify ANDROID_API")
+            endif()
+            if (NOT ANDROID_MACHINE)
+                message(FATAL_ERROR "Please specify ANDROID_MACHINE")
+            endif()
+
+            # try detecting ANDROID_NDK_ROOT
+            if (NOT ANDROID_NDK_ROOT)
+                if (EXISTS "/usr/local/${ANDROID_NDK}")
+                    set(ANDROID_NDK_ROOT "/usr/local/${ANDROID_NDK}")
+                endif()
+                if (EXISTS "/opt/${ANDROID_NDK}")
+                    set(ANDROID_NDK_ROOT "/opt/${ANDROID_NDK}")
+                endif()
+                if (EXISTS "ENV${HOME}/${ANDROID_NDK}")
+                    set(ANDROID_NDK_ROOT "ENV${HOME}/${ANDROID_NDK}")
+                endif()
+                if (EXISTS "ENV${PWD}/${ANDROID_NDK}")
+                    set(ANDROID_NDK_ROOT "ENV${PWD}/${ANDROID_NDK}")
+                endif()
+            endif()
+
+            if (NOT ANDROID_NDK_ROOT)
+                message(FATAL_ERROR "Android NDK root directory not found!")
+            endif()
+
+            if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains")
+                message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains not found!")
+            endif()
+
+            if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}")
+                message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI} not found!")
+            endif()
+
+            ###
+            set(ANDROID_TOOLCHAIN "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}/prebuilt/linux-x86_64/bin")
+            set(PATH ${ANDROID_TOOLCHAIN})
+            set(ANDROID_SYSROOT ${ANDROID_NDK_ROOT}/platforms/${ANDROID_API}/${ANDROID_ARCH})
+            set(ANDROID_NDK_SYSROOT ${ANDROID_SYSROOT})
+            set(NDK_SYSROOT ${ANDROID_SYSROOT})
+            set(SYSROOT ${ANDROID_SYSROOT})
+            if (ANDROID_ARCH MATCHES "arch-arm")
+                set(IF_EABI "eabi")
+                set(ARCH "arm")
+            else()
+                set(ARCH "x86")
+            endif()
+            set(MACHINE ${ANDROID_MACHINE})
+            set(SYSTEM android)
+            # for OpenSSL
+            set(CROSS_COMPILE "${ARCH}-linux-android${IF_EABI}-")
+            set(ANDROID_DEV ${ANDROID_SYSROOT}/usr)
+            set(HOSTCC gcc) #${CMAKE_C_COMPILER})
+            set(RELEASE "2.6.37")
+
+            set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
+            set(COMMAND_TEST "true")
+        else()                   # detect host system automatically
+            set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
+            set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} test)
+        endif()
+
+        ExternalProject_Add(openssl
+            GIT_REPOSITORY git://git.openssl.org/openssl.git
+            GIT_TAG ${OPENSSL_BRANCH}
 
             UPDATE_COMMAND ""
-            CONFIGURE_COMMAND ""
-            BUILD_COMMAND ""
-            INSTALL_COMMAND ""
-            TEST_COMMAND ""
-    )
-    if (PREBUILT_BRANCH)
-        # set library locations if prebuilt branch specified
-        set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libssl.a)
-        set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libcrypto.a)
-    else()
-        # try to use locations of alredy built libraries (using BUILD_OPENSSL)
-        if ((NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a) OR (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a))
-            message(FATAL_ERROR "OpenSSL libraries not found. Either build them (with BUILD_OPENSSL) or use prebuilts (set PREBUILT_BRANCH).")
+
+            CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
+
+            BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} depend
+            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} -j ${NUM_JOBS}
+
+            TEST_BEFORE_INSTALL 1
+            TEST_COMMAND ${COMMAND_TEST}
+
+            INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
+            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} install
+
+            LOG_TEST 1
+            LOG_INSTALL 1
+        )
+
+        # set git config values to openssl requirements (no impact on linux though)
+        ExternalProject_Add_Step(openssl setGitConfig
+            COMMAND ${GIT_EXECUTABLE} config --global core.autocrlf false
+            COMMAND ${GIT_EXECUTABLE} config --global core.eol lf
+            DEPENDEES
+            DEPENDERS download
+            ALWAYS ON
+        )
+
+        # set, don't abort if it fails (due to variables being empty). To realize this we must only call git if the configs
+        # are set globally, otherwise do a no-op command ("echo 1", since "true" is not available everywhere)
+        if (GIT_CORE_AUTOCRLF)
+            set (GIT_CORE_AUTOCRLF_CMD ${GIT_EXECUTABLE} config --global core.autocrlf ${GIT_CORE_AUTOCRLF})
+        else()
+            set (GIT_CORE_AUTOCRLF_CMD echo)
         endif()
+        if (GIT_CORE_EOL)
+            set (GIT_CORE_EOL_CMD ${GIT_EXECUTABLE} config --global core.eol ${GIT_CORE_EOL})
+        else()
+            set (GIT_CORE_EOL_CMD echo)
+        endif()
+        ##
+
+        # set git config values to previous values
+        ExternalProject_Add_Step(openssl restoreGitConfig
+        # unset first (is required, since old value could be omitted, which wouldn't take any effect in "set"
+            COMMAND ${GIT_EXECUTABLE} config --global --unset core.autocrlf
+            COMMAND ${GIT_EXECUTABLE} config --global --unset core.eol
+
+            COMMAND ${GIT_CORE_AUTOCRLF_CMD}
+            COMMAND ${GIT_CORE_EOL_CMD}
+
+            DEPENDEES download
+            DEPENDERS configure
+            ALWAYS ON
+        )
+
+        # write environment to file, is picked up by python script
+        get_cmake_property(_variableNames VARIABLES)
+        foreach (_variableName ${_variableNames})
+            if (NOT _variableName MATCHES "lines")
+                set(OUT_FILE "${OUT_FILE}${_variableName}=\"${${_variableName}}\"\n")
+            endif()
+        endforeach()
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt ${OUT_FILE})
+
         set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
         set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
-    endif()
-endif(BUILD_OPENSSL)
+    else(BUILD_OPENSSL)
+        ExternalProject_Add(openssl
+		GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
+                GIT_TAG ${PREBUILT_BRANCH}
 
-add_dependencies(ssl openssl)
-add_dependencies(crypto openssl)
+                UPDATE_COMMAND ""
+                CONFIGURE_COMMAND ""
+                BUILD_COMMAND ""
+                INSTALL_COMMAND ""
+                TEST_COMMAND ""
+        )
+        if (PREBUILT_BRANCH)
+            # set library locations if prebuilt branch specified
+            set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libssl.a)
+            set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libcrypto.a)
+        else()
+            # try to use locations of alredy built libraries (using BUILD_OPENSSL)
+            if ((NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a) OR (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a))
+                message(FATAL_ERROR "OpenSSL libraries not found. Either build them (with BUILD_OPENSSL) or use prebuilts (set PREBUILT_BRANCH).")
+            endif()
+            set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
+            set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
+        endif()
+    endif(BUILD_OPENSSL)
+
+    add_dependencies(ssl openssl)
+    add_dependencies(crypto openssl)
+endif()
