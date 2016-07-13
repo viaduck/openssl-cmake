@@ -5,7 +5,6 @@ set(OPENSSL_BRANCH OFF CACHE STRING "OpenSSL branch (or tag) to build")
 set(CROSS_ANDROID OFF CACHE BOOL "Cross-compiling for Android?")
 set(CROSS OFF CACHE BOOL "Cross-compiling?")
 set(CROSS_TARGET OFF CACHE STRING "Cross-compilation target")
-set(PREBUILT_BRANCH OFF CACHE STRING "Branch in OpenSSL-Prebuilts to checkout from")
 
 set(NUM_JOBS 5)
 
@@ -236,7 +235,20 @@ else()
 
         set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
         set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
-    else(BUILD_OPENSSL)
+    else(BUILD_OPENSSL)             # using external prebuilts
+        # detect system
+        include(TargetArch.cmake)
+        target_architecture(ARCH)
+        if (WIN32)
+            set(ARCH_SYSTEM ${ARCH}-w64-mingw32)            # prebuilts use mingw-w64 for building
+        elseif(UNIX AND NOT APPLE)
+            set(ARCH_SYSTEM ${ARCH}-linux)
+        elseif(APPLE)
+            message(FATAL_ERROR "Prebuilts for Apple systems are not available (yet)!")
+        endif()
+        message(STATUS "Using ${ARCH_SYSTEM} prebuilts")
+        set(PREBUILT_BRANCH ${ARCH_SYSTEM} CACHE STRING "Branch in OpenSSL-Prebuilts to checkout from")
+
         ExternalProject_Add(openssl
 		GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
                 GIT_TAG ${PREBUILT_BRANCH}
