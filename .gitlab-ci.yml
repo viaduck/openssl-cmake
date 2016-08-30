@@ -14,7 +14,7 @@ linux-x86_64:
         - chmod 777 build-linux-x86_64                                # jdoe must be able to write to build directory
         - cd build-linux-x86_64
         - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH
-        - su -l jdoe -c "make"                                        # switch to unprivileged
+        - su -l jdoe -c "cd `pwd` && make"                                        # build and test as unprivileged
         - cd ..
         - scripts/commit_result.sh x86_64-linux build-linux-x86_64
     stage: build
