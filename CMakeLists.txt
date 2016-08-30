@@ -74,11 +74,17 @@ else()
         set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
 
         # no-dsa no-rc2 no-des break tests, therefore we need them
-        set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engines no-idea no-mdc2 no-rc5 no-camellia no-ripemd no-ssl2 no-ssl3 no-heartbeats no-gost no-sha0 no-deprecated no-capieng no-decc-init no-comp no-dtls no-psk no-srp no-dso)
+        set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso)
+
+        # additional configure script parameters
+        set(CONFIGURE_OPENSSL_PARAMS --api=1.1.0)
+
+        # set OpenSSL API compatibility version
+        add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 
         # cross-compiling
         if (CROSS)
-            set(COMMAND_CONFIGURE ./Configure --prefix=${CMAKE_CURRENT_BINARY_DIR} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES})
+            set(COMMAND_CONFIGURE ./Configure ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES})
             set(COMMAND_TEST "true")
         elseif(CROSS_ANDROID)
             # The following code is an adapted version of OpenSSL's Setenv-android.sh
@@ -160,10 +166,13 @@ else()
             set(HOSTCC gcc) #${CMAKE_C_COMPILER})
             set(RELEASE "2.6.37")
 
-            set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
+            # Android specific configuration options
+            set(CONFIGURE_OPENSSL_MODULES ${CONFIGURE_OPENSSL_MODULES} no-hw)
+
+            set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
             set(COMMAND_TEST "true")
         else()                   # detect host system automatically
-            set(COMMAND_CONFIGURE ./config --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
+            set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
             set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} test)
         endif()
 
@@ -175,8 +184,7 @@ else()
 
             CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
 
-            BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} depend
-            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} -j ${NUM_JOBS}
+            BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} -j ${NUM_JOBS}
 
             TEST_BEFORE_INSTALL 1
             TEST_COMMAND ${COMMAND_TEST}
