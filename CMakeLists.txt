@@ -192,7 +192,6 @@ else()
             INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
             COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} install
 
-            LOG_TEST 1
             LOG_INSTALL 1
         )
 
