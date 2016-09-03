@@ -44,8 +44,13 @@ else()
             elseif(NOT (CYGWIN OR MSYS))
                 message(FATAL_ERROR "Unsupported compiler infrastructure")
             endif(MINGW)
+            
+            set(MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM})
         elseif(NOT UNIX)
             message(FATAL_ERROR "Unsupported platform, sorry")
+        else()
+            # for OpenSSL we can only use GNU make no such exotic things as Ninja (MSYS always uses GNU make)
+            find_program(MAKE_PROGRAM make)
         endif()
 
         # save old git values for core.autocrlf and core.eol
@@ -141,9 +146,9 @@ else()
                 message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains not found!")
             endif()
 
-            if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}")
-                message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI} not found!")
-            endif()
+            #if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}")
+            #    message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI} not found!")
+            #endif()
 
             ###
             set(ANDROID_TOOLCHAIN "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}/prebuilt/linux-x86_64/bin")
@@ -173,7 +178,7 @@ else()
             set(COMMAND_TEST "true")
         else()                   # detect host system automatically
             set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
-            set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} test)
+            set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} test)
         endif()
 
         ExternalProject_Add(openssl
@@ -184,13 +189,14 @@ else()
 
             CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
 
-            BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} -j ${NUM_JOBS}
+            BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
+            BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a
 
             TEST_BEFORE_INSTALL 1
             TEST_COMMAND ${COMMAND_TEST}
 
             INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${CMAKE_MAKE_PROGRAM} install
+            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} install
 
             LOG_INSTALL 1
         )
@@ -264,6 +270,7 @@ else()
                 UPDATE_COMMAND ""
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND ""
+                BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a
                 INSTALL_COMMAND ""
                 TEST_COMMAND ""
         )
