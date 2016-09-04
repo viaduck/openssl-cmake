@@ -23,8 +23,12 @@ else()
     include(ExternalProject)
     add_library(ssl STATIC IMPORTED GLOBAL)
     add_library(crypto STATIC IMPORTED GLOBAL)
+    
+    if ((EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a) AND (EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a))
+        message(WARNING "Not building OpenSSL again. Remove ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a and ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a for rebuild")
+    endif()
 
-    if(BUILD_OPENSSL)
+    if(BUILD_OPENSSL AND (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a OR NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a))
         if (NOT OPENSSL_BRANCH)
             message(FATAL_ERROR "You must specify OPENSSL_BRANCH!")
         endif()
@@ -86,7 +90,7 @@ else()
 
         # set OpenSSL API compatibility version
         add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
-
+        
         # cross-compiling
         if (CROSS)
             set(COMMAND_CONFIGURE ./Configure ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES})
@@ -249,7 +253,7 @@ else()
 
         set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
         set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
-    else(BUILD_OPENSSL)             # using external prebuilts
+    else()             # using external prebuilts
         # detect system
         include(TargetArch.cmake)
         target_architecture(ARCH)
@@ -287,7 +291,7 @@ else()
             set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
             set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
         endif()
-    endif(BUILD_OPENSSL)
+    endif()
 
     add_dependencies(ssl openssl)
     add_dependencies(crypto openssl)
