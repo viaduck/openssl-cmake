@@ -4,7 +4,7 @@
 
 from subprocess import PIPE, Popen
 from sys import argv, exit
-import os
+import os, re
 
 env = os.environ
 l = []
@@ -36,15 +36,16 @@ l[0] = '"'+l[0]+'"'
 
 # read environment from file if cross-compiling
 if os_s == "LINUX_CROSS_ANDROID":
+    expr = re.compile('^(.*?)="(.*?)"', re.MULTILINE | re.DOTALL)
     f = open(binary_openssl_dir_source+"/../../../buildenv.txt", "r")
-    for line in f:
-        k, v = line.split("=", 1)
-        v = v.replace("\n", "")
+    content = f.read()
+    f.close()
+
+    for k, v in expr.findall(content):
         if k != "PATH":
             env[k] = v.replace('"', '')
         else:
             env[k] = v.replace('"', '')+":"+env[k]
-    f.close()
 
 proc = None
 if os_s == "WIN32":
