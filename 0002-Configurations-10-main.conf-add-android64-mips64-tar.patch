@@ -1,0 +1,37 @@
+From c1ec40ef1d9b487061f4f9e2843d4a1894f96660 Mon Sep 17 00:00:00 2001
+From: Andy Polyakov <appro@openssl.org>
+Date: Thu, 1 Sep 2016 10:46:08 +0200
+Subject: [PATCH] Configurations/10-main.conf: add android64-mips64 target.
+
+Reviewed-by: Richard Levitte <levitte@openssl.org>
+---
+ Configurations/10-main.conf | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
+index a1d566d..f32ccbb 100644
+--- a/Configurations/10-main.conf
++++ b/Configurations/10-main.conf
+@@ -938,6 +938,19 @@ sub vms_info {
+         inherit_from     => [ "android64", asm("x86_64_asm") ],
+         perlasm_scheme   => "elf",
+     },
++    "android64-mips64" => {
++        ############################################################
++        # You are more than likely have to specify target processor
++        # on ./Configure command line. Trouble is that toolchain's
++        # default is MIPS64r6 (at least in r10d), but there are no
++        # such processors around (or they are too rare to spot one).
++        # Actual problem is that MIPS64r6 is binary incompatible
++        # with previous MIPS ISA versions, in sense that unlike
++        # prior versions original MIPS binary code will fail.
++        #
++        inherit_from     => [ "android64", asm("mips64_asm") ],
++        perlasm_scheme   => "64",
++    },
+ 
+ #### *BSD
+     "BSD-generic32" => {
+-- 
+2.9.3
+

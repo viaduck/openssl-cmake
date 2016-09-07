@@ -241,6 +241,8 @@ if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
 
             CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
             PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-android-clang.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0001-Configurations-10-main.conf-add-android64-x86_64-tar.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0002-Configurations-10-main.conf-add-android64-mips64-tar.patch || true
 
             BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
             BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a
@@ -263,6 +265,8 @@ else()
 
             CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
             PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-android-clang.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0001-Configurations-10-main.conf-add-android64-x86_64-tar.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0002-Configurations-10-main.conf-add-android64-mips64-tar.patch || true
 
             BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
 

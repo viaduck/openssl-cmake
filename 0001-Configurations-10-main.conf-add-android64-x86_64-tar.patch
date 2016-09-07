@@ -1,0 +1,28 @@
+From a43249122baabb9ebaee0822d683f1fdb60f72a7 Mon Sep 17 00:00:00 2001
+From: Andy Polyakov <appro@openssl.org>
+Date: Wed, 31 Aug 2016 20:50:56 +0200
+Subject: [PATCH] Configurations/10-main.conf: add android64-x86_64 target.
+
+Reviewed-by: Rich Salz <rsalz@openssl.org>
+---
+ Configurations/10-main.conf | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
+index 843647d..a1d566d 100644
+--- a/Configurations/10-main.conf
++++ b/Configurations/10-main.conf
+@@ -934,6 +934,10 @@ sub vms_info {
+         inherit_from     => [ "android64", asm("aarch64_asm") ],
+         perlasm_scheme   => "linux64",
+     },
++    "android64-x86_64" => {
++        inherit_from     => [ "android64", asm("x86_64_asm") ],
++        perlasm_scheme   => "elf",
++    },
+ 
+ #### *BSD
+     "BSD-generic32" => {
+-- 
+2.9.3
+
