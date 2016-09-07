@@ -12,7 +12,7 @@ linux-x86_64:
         - mkdir build-linux-x86_64
         - useradd -m -d /home/jdoe jdoe                               # OpenSSL tests must be run as unprivileged user
         - cd build-linux-x86_64
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DOPENSSL_INSTALL_MAN=ON
         - chmod -R 777 .                                              # jdoe must be able to write to build directory
         - su -l jdoe -c "cd `pwd` && make"                            # build and test as unprivileged
         - cd ..
@@ -25,7 +25,7 @@ windows-x86:
     script:
         - mkdir build-windows-x86
         - cd build-windows-x86
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS=ON -DCROSS_PREFIX=i686-w64-mingw32- -DCROSS_TARGET=mingw
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DOPENSSL_INSTALL_MAN=ON -DCROSS=ON -DCROSS_PREFIX=i686-w64-mingw32- -DCROSS_TARGET=mingw
         - make
         - cd ..
         - scripts/commit_result.sh i686-w64-mingw32 build-windows-x86
@@ -37,7 +37,7 @@ windows-x86_64:
     script:
         - mkdir build-windows-x86_64
         - cd build-windows-x86_64
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS=ON -DCROSS_PREFIX=x86_64-w64-mingw32- -DCROSS_TARGET=mingw64
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DOPENSSL_INSTALL_MAN=ON -DCROSS=ON -DCROSS_PREFIX=x86_64-w64-mingw32- -DCROSS_TARGET=mingw64
         - make
         - cd ..
         - scripts/commit_result.sh x86_64-w64-mingw32 build-windows-x86_64

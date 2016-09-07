@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 
 set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
 set(OPENSSL_BRANCH OFF CACHE STRING "OpenSSL branch (or tag) to build")
+set(OPENSSL_INSTALL_MAN OFF CACHE STRING "Install man pages?")
 set(CROSS_ANDROID OFF CACHE BOOL "Cross-compiling for Android?")
 set(CROSS OFF CACHE BOOL "Cross-compiling?")
 set(CROSS_TARGET OFF CACHE STRING "Cross-compilation target")
@@ -87,6 +88,13 @@ else()
 
         # additional configure script parameters
         set(CONFIGURE_OPENSSL_PARAMS --api=1.1.0)
+
+        # set install command depending of choice on man page generation
+        if (OPENSSL_INSTALL_MAN)
+            set(INSTALL_OPENSSL "install")
+        else()
+            set(INSTALL_OPENSSL "install_sw")
+        endif()
 
         # set OpenSSL API compatibility version
         add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
@@ -241,7 +249,7 @@ if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
             TEST_COMMAND ${COMMAND_TEST}
 
             INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} install
+            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} ${INSTALL_OPENSSL}
             COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
 
             LOG_INSTALL 1
@@ -262,7 +270,7 @@ else()
             TEST_COMMAND ${COMMAND_TEST}
 
             INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} install
+            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} ${INSTALL_OPENSSL}
             COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
 
             LOG_INSTALL 1
