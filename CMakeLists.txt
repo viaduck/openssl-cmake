@@ -130,19 +130,35 @@ else()
                     set(OPENSSL_PLATFORM "armeabi")
                     set(CONFIGURE_OPENSSL_PARAMS ${CONFIGURE_OPENSSL_PARAMS} "-march=armv7-a")
                 else()
-                    set(OPENSSL_PLATFORM ${ANDROID_NDK_ABI_NAME})
+                    if (ANDROID_NDK_ABI_NAME MATCHES "arm64-v8a")
+                        set(OPENSSL_PLATFORM "aarch64")
+                        set(CFLAGS "${CFLAGS} -fno-integrated-as")
+                        set(CXXFLAGS "${CXXFLAGS} -fno-integrated-as")
+                    else()
+                        set(OPENSSL_PLATFORM ${ANDROID_NDK_ABI_NAME})
+                    endif()
+                    
+                    if(ANDROID_NDK_ABI_NAME MATCHES "mips64")
+                        set(CFLAGS "${CFLAGS} -fno-integrated-as")
+                        set(CXXFLAGS "${CXXFLAGS} -fno-integrated-as")
+                    endif()
+                endif()
+                
+                set(ANDROID_STRING "android")
+                if (ANDROID_ARCH_NAME MATCHES "64")
+                    set(ANDROID_STRING "${ANDROID_STRING}64")
                 endif()
                 
                 # ... but we have to convert all the CMake options to environment variables!
                 set(CROSS_SYSROOT ${CMAKE_SYSROOT})
                 set(AS ${CMAKE_ASM_COMPILER})
                 set(AR ${CMAKE_AR})
-                set(LD ${CMAKE_LINKER})
+                set(LD ${CMAKE_LINKER} ${CMAKE_MODULE_LINKER_FLAGS})
                 
                 # have to surround variables with double quotes, otherwise they will be merged together without any separator
                 set(CC "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILE_OPTIONS_EXTERNAL_TOOLCHAIN} ${CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN} ${CFLAGS} -target ${CMAKE_C_COMPILER_TARGET}")
                 
-                set(COMMAND_CONFIGURE ./Configure android-${OPENSSL_PLATFORM} ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
+                set(COMMAND_CONFIGURE ./Configure ${ANDROID_STRING}-${OPENSSL_PLATFORM} ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
             else()
                 # The following code is an adapted version of OpenSSL's Setenv-android.sh
                 # Original contents are licensed under the terms of the OpenSSL license
@@ -242,7 +258,10 @@ if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
             CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
             PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-android-clang.patch || true
             COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0001-Configurations-10-main.conf-add-android64-x86_64-tar.patch || true
-            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0002-Configurations-10-main.conf-add-android64-mips64-tar.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0002-MIPS-assembly-pack-adapt-it-for-MIPS-32-64-R6.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0003-Configurations-10-main.conf-add-android64-mips64-tar.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0004-modes-asm-ghash-armv4.pl-improve-interoperability-wi.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-fix-armv4.patch || true
 
             BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
             BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a
@@ -266,7 +285,10 @@ else()
             CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
             PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-android-clang.patch || true
             COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0001-Configurations-10-main.conf-add-android64-x86_64-tar.patch || true
-            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0002-Configurations-10-main.conf-add-android64-mips64-tar.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0002-MIPS-assembly-pack-adapt-it-for-MIPS-32-64-R6.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0003-Configurations-10-main.conf-add-android64-mips64-tar.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0004-modes-asm-ghash-armv4.pl-improve-interoperability-wi.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-fix-armv4.patch || true
 
             BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
 
