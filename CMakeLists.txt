@@ -380,7 +380,7 @@ if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
         )
 else()
         ExternalProject_Add(openssl
-		GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
+                GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
                 GIT_TAG ${PREBUILT_BRANCH}
 
                 UPDATE_COMMAND ""
