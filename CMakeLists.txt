@@ -374,7 +374,7 @@ if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
                 UPDATE_COMMAND ""
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND ""
-                BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a
+                BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libcrypto.a
                 INSTALL_COMMAND ""
                 TEST_COMMAND ""
         )
