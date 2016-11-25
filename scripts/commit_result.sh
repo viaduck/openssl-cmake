@@ -15,5 +15,7 @@ cp -R ../$2/include $1
 cp -R ../$2/ssl $1
 
 git add $1
+git config --global user.email "slave@viaduck.org"
+git config --global user.name "slave"
 git commit -m "Automatically built by slave ($OPENSSL_BRANCH)" > /dev/null
 git push --set-upstream origin $1
