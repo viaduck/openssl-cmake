@@ -4,7 +4,7 @@ stages:
     - build         # contains build and test and deploy
 
 variables:
-    OPENSSL_BRANCH: "OpenSSL_1_1_0-stable"
+    OPENSSL_BRANCH: "OpenSSL_1_1_0e"
     PREBUILTS_REPO: "https://$GIT_USER:$GIT_PASSWORD@gl.viaduck.org/viaduck/openssl-prebuilts.git"
     
 linux-x86_64:
