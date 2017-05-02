@@ -20,6 +20,7 @@ find_package(PythonInterp 3 REQUIRED)       # use Python 3 - Python2 is not comp
 
 if (SYSTEM_OPENSSL)
     find_package(OpenSSL REQUIRED)
+    add_custom_target(openssl)
 else()
     include(ExternalProject)
     add_library(ssl STATIC IMPORTED GLOBAL)
