@@ -1,4 +1,4 @@
-image: custom/debian:jessie-mod
+image: viaduck/ci
 
 stages:
     - build         # contains build and test and deploy
