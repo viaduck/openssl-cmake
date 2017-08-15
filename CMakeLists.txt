@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.2)
 
 set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
 set(OPENSSL_BRANCH OFF CACHE STRING "OpenSSL branch (or tag) to build")
@@ -248,8 +248,6 @@ else()
             set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} test)
         endif()
 
-# BUILD_BYPRODUCTS has been introduced in CMake 3.2, but we need compatibility with 3.0 (debian jessie)
-if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
         ExternalProject_Add(openssl
             GIT_REPOSITORY git://git.openssl.org/openssl.git
             GIT_TAG ${OPENSSL_BRANCH}
@@ -276,33 +274,6 @@ if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
 
             LOG_INSTALL 1
         )
-else()
-        ExternalProject_Add(openssl
-            GIT_REPOSITORY git://git.openssl.org/openssl.git
-            GIT_TAG ${OPENSSL_BRANCH}
-
-            UPDATE_COMMAND ""
-
-            CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
-            PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-android-clang.patch || true
-            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0001-Configurations-10-main.conf-add-android64-x86_64-tar.patch || true
-            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0002-MIPS-assembly-pack-adapt-it-for-MIPS-32-64-R6.patch || true
-            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0003-Configurations-10-main.conf-add-android64-mips64-tar.patch || true
-            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0004-modes-asm-ghash-armv4.pl-improve-interoperability-wi.patch || true
-            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-fix-armv4.patch || true
-
-            BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
-
-            TEST_BEFORE_INSTALL 1
-            TEST_COMMAND ${COMMAND_TEST}
-
-            INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} ${INSTALL_OPENSSL}
-            COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
-
-            LOG_INSTALL 1
-        )
-endif()
 
         # set git config values to openssl requirements (no impact on linux though)
         ExternalProject_Add_Step(openssl setGitConfig
@@ -366,8 +337,6 @@ endif()
         message(STATUS "Using ${ARCH_SYSTEM} prebuilts")
         set(PREBUILT_BRANCH ${ARCH_SYSTEM} CACHE STRING "Branch in OpenSSL-Prebuilts to checkout from")
 
-# BUILD_BYPRODUCTS has been introduced in CMake 3.2, but we need compatibility with 3.0 (debian jessie)
-if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
         ExternalProject_Add(openssl
 		GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
                 GIT_TAG ${PREBUILT_BRANCH}
@@ -379,18 +348,6 @@ if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
                 INSTALL_COMMAND ""
                 TEST_COMMAND ""
         )
-else()
-        ExternalProject_Add(openssl
-                GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
-                GIT_TAG ${PREBUILT_BRANCH}
-
-                UPDATE_COMMAND ""
-                CONFIGURE_COMMAND ""
-                BUILD_COMMAND ""
-                INSTALL_COMMAND ""
-                TEST_COMMAND ""
-        )
-endif()
 
         if (PREBUILT_BRANCH)
             # set library locations if prebuilt branch specified
