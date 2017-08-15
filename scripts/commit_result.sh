@@ -6,7 +6,8 @@ cd openssl-prebuilts
 git checkout master
 git branch $1
 git checkout $1
-git pull -u origin $1
+git branch --set-upstream-to=origin/$1
+git pull
 
 rm -R $1/* || mkdir $1
 cp -R ../$2/bin $1
