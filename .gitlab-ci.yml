@@ -22,6 +22,7 @@ linux-x86_64:
         - master
 
 windows-x86:
+    image: viaduck/ci:mingw
     script:
         - mkdir build-windows-x86
         - cd build-windows-x86
@@ -34,6 +35,7 @@ windows-x86:
         - master
 
 windows-x86_64:
+    image: viaduck/ci:mingw
     script:
         - mkdir build-windows-x86_64
         - cd build-windows-x86_64
