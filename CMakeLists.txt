@@ -260,6 +260,7 @@ else()
             COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0002-MIPS-assembly-pack-adapt-it-for-MIPS-32-64-R6.patch || true
             COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0003-Configurations-10-main.conf-add-android64-mips64-tar.patch || true
             COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0004-modes-asm-ghash-armv4.pl-improve-interoperability-wi.patch || true
+            COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/0005-Only-release-thread_local-key-if-we-created-it.patch || true
             COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-fix-armv4.patch || true
 
             BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
