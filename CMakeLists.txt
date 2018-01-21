@@ -8,7 +8,8 @@ set(CROSS OFF CACHE BOOL "Cross-compiling?")
 set(CROSS_TARGET OFF CACHE STRING "Cross-compilation target")
 set(SYSTEM_OPENSSL OFF CACHE STRING "Use system-provided openssl libraries (instead of prebuilts or building)")
 
-set(NUM_JOBS 5)
+include(ProcessorCount)
+ProcessorCount(NUM_JOBS)
 
 set(OS "UNIX")
 find_package(Git REQUIRED)
@@ -23,14 +24,17 @@ if (SYSTEM_OPENSSL)
     add_custom_target(openssl)
 else()
     include(ExternalProject)
-    add_library(ssl STATIC IMPORTED GLOBAL)
-    add_library(crypto STATIC IMPORTED GLOBAL)
-    
-    if ((EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a) AND (EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a))
-        message(WARNING "Not building OpenSSL again. Remove ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a and ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a for rebuild")
+    add_library(ssl_lib STATIC IMPORTED GLOBAL)
+    add_library(crypto_lib STATIC IMPORTED GLOBAL)
+
+    set(OPENSSL_LIBSSL_PATH ${CMAKE_CURRENT_BINARY_DIR}/usr/local/lib/libssl.a)
+    set(OPENSSL_LIBCRYPTO_PATH ${CMAKE_CURRENT_BINARY_DIR}/usr/local/lib/libcrypto.a)
+
+    if ((EXISTS ${OPENSSL_LIBSSL_PATH}) AND (EXISTS ${OPENSSL_LIBCRYPTO_PATH}))
+        message(WARNING "Not building OpenSSL again. Remove ${OPENSSL_LIBSSL_PATH} and ${OPENSSL_LIBCRYPTO_PATH} for rebuild")
     endif()
 
-    if(BUILD_OPENSSL AND (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a OR NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a))
+    if(BUILD_OPENSSL AND (NOT EXISTS ${OPENSSL_LIBSSL_PATH} OR NOT EXISTS ${OPENSSL_LIBCRYPTO_PATH}))
         if (NOT OPENSSL_BRANCH)
             message(FATAL_ERROR "You must specify OPENSSL_BRANCH!")
         endif()
@@ -110,7 +114,7 @@ else()
         
         # cross-compiling
         if (CROSS)
-            set(COMMAND_CONFIGURE ./Configure ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES})
+            set(COMMAND_CONFIGURE ./Configure ${CONFIGURE_OPENSSL_PARAMS} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES})
             set(COMMAND_TEST "true")
         elseif(CROSS_ANDROID)
             
@@ -159,7 +163,7 @@ else()
                 # have to surround variables with double quotes, otherwise they will be merged together without any separator
                 set(CC "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILE_OPTIONS_EXTERNAL_TOOLCHAIN} ${CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN} ${CFLAGS} -target ${CMAKE_C_COMPILER_TARGET}")
                 
-                set(COMMAND_CONFIGURE ./Configure ${ANDROID_STRING}-${OPENSSL_PLATFORM} ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
+                set(COMMAND_CONFIGURE ./Configure ${ANDROID_STRING}-${OPENSSL_PLATFORM} ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
             else()
                 # The following code is an adapted version of OpenSSL's Setenv-android.sh
                 # Original contents are licensed under the terms of the OpenSSL license
@@ -240,11 +244,11 @@ else()
                 set(HOSTCC gcc) #${CMAKE_C_COMPILER})
                 set(RELEASE "2.6.37")
                 
-                set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
+                set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
             endif()
             set(COMMAND_TEST "true")
         else()                   # detect host system automatically
-            set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR} ${CONFIGURE_OPENSSL_MODULES})
+            set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
             set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} test)
         endif()
 
@@ -264,13 +268,13 @@ else()
             COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/openssl-fix-armv4.patch || true
 
             BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
-            BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a
+            BUILD_BYPRODUCTS ${OPENSSL_LIBSSL_PATH} ${OPENSSL_LIBCRYPTO_PATH}
 
             TEST_BEFORE_INSTALL 1
             TEST_COMMAND ${COMMAND_TEST}
 
             INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} ${INSTALL_OPENSSL}
+            COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} DESTDIR=${CMAKE_CURRENT_BINARY_DIR} ${INSTALL_OPENSSL}
             COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
 
             LOG_INSTALL 1
@@ -322,9 +326,9 @@ else()
         endforeach()
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt ${OUT_FILE})
 
-        set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
-        set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
-    else()             # using external prebuilts
+        set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
+        set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
+    else()             # using external prebuilts or already locally built
         # detect system
         include(TargetArch.cmake)
         target_architecture(ARCH)
@@ -345,26 +349,39 @@ else()
                 UPDATE_COMMAND ""
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND ""
-                BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libcrypto.a
+                BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/lib/libcrypto.a
                 INSTALL_COMMAND ""
                 TEST_COMMAND ""
         )
 
-        if (PREBUILT_BRANCH)
+        if (PREBUILT_BRANCH AND NOT BUILD_OPENSSL)
             # set library locations if prebuilt branch specified
-            set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libssl.a)
-            set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/lib/libcrypto.a)
+            set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/lib/libssl.a)
+            set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/lib/libcrypto.a)
         else()
             # try to use locations of alredy built libraries (using BUILD_OPENSSL)
-            if ((NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a) OR (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a))
+            if ((NOT EXISTS ${OPENSSL_LIBSSL_PATH}) OR (NOT EXISTS ${OPENSSL_LIBCRYPTO_PATH}))
                 message(FATAL_ERROR "OpenSSL libraries not found. Either build them (with BUILD_OPENSSL) or use prebuilts (set PREBUILT_BRANCH)
                         or use the system-provided libraries (SYSTEM_OPENSSL).")
             endif()
-            set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libssl.a)
-            set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/libcrypto.a)
+            set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
+            set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
         endif()
     endif()
 
-    add_dependencies(ssl openssl)
-    add_dependencies(crypto openssl)
+    add_dependencies(ssl_lib openssl)
+    add_dependencies(crypto_lib openssl)
+
+    add_library(ssl INTERFACE)
+    target_link_libraries(ssl INTERFACE ssl_lib)
+
+    add_library(crypto INTERFACE)
+    target_link_libraries(crypto INTERFACE crypto_lib)
+
+    # prebuilts
+    target_include_directories(ssl BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/include)
+    target_include_directories(crypto BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/include)
+    # locally built version
+    target_include_directories(ssl BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/usr/local/include)
+    target_include_directories(crypto BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/usr/local/include)
 endif()

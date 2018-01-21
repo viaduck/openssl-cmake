@@ -10,10 +10,7 @@ git branch --set-upstream-to=origin/$1
 git pull
 
 rm -R $1/* || mkdir $1
-cp -R ../$2/bin $1
-cp -R ../$2/lib $1
-cp -R ../$2/include $1
-cp -R ../$2/ssl $1
+cp -R ../$2/usr $1
 
 git add $1
 git config --global user.email "slave@viaduck.org"
