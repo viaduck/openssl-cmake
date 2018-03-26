@@ -8,13 +8,14 @@ include(ExternalProject)
 find_package(Git REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
 
-# We need to tell Clang to ignore unused arguments to avoid compilation errors, since OpenSSL passes an -mandroid which is only known by GCC (but not Clang)
-# We cannot silence this error ("-Wno-error=unused-command-line-argument-hard-error-in-future" no longer works), therefore we need a patch... uargh... the patch is applied in ExternalProject_Add
-find_program(PATCH_PROGRAM patch)
-if (NOT PATCH_PROGRAM)
-    message(FATAL_ERROR "Cannot find patch utility. This is only required for Android cross-compilation but due to script complexity "
-                        "the requirement is always enforced")
-endif()
+# used to apply various patches to OpenSSL
+# we are currently patch-free
+
+#find_program(PATCH_PROGRAM patch)
+#if (NOT PATCH_PROGRAM)
+#    message(FATAL_ERROR "Cannot find patch utility. This is only required for Android cross-compilation but due to script complexity "
+#                        "the requirement is always enforced")
+#endif()
 
 # set variables
 ProcessorCount(NUM_JOBS)
@@ -242,13 +243,7 @@ else()
         UPDATE_COMMAND ""
 
         CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
-        PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/openssl-android-clang.patch || true
-        COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/0001-Configurations-10-main.conf-add-android64-x86_64-tar.patch || true
-        COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/0002-MIPS-assembly-pack-adapt-it-for-MIPS-32-64-R6.patch || true
-        COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/0003-Configurations-10-main.conf-add-android64-mips64-tar.patch || true
-        COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/0004-modes-asm-ghash-armv4.pl-improve-interoperability-wi.patch || true
-        COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/0005-Only-release-thread_local-key-if-we-created-it.patch || true
-        COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/openssl-fix-armv4.patch || true
+        PATCH_COMMAND ""
 
         BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
         BUILD_BYPRODUCTS ${OPENSSL_LIBSSL_PATH} ${OPENSSL_LIBCRYPTO_PATH}
