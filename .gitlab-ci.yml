@@ -5,7 +5,6 @@ stages:
 
 variables:
     OPENSSL_BRANCH: "OpenSSL_1_1_0g"
-    PREBUILTS_REPO: "https://$GIT_USER:$GIT_PASSWORD@gl.viaduck.org/viaduck/openssl-prebuilts.git"
     
 linux-x86_64:
     script:

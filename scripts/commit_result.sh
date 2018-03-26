@@ -1,6 +1,14 @@
 #!/bin/bash
 # usage: <architecture> <directory>
 
+# early exit when no secrets are set
+if [ -z $GIT_PASSWORD ]; then
+    echo "No secrets to commit result."
+    exit 0
+fi
+
+PREBUILTS_REPO="https://$GIT_USER:$GIT_PASSWORD@gl.viaduck.org/viaduck/openssl-prebuilts.git"
+
 git clone $PREBUILTS_REPO
 cd openssl-prebuilts
 git checkout master
