@@ -32,13 +32,11 @@ find_package(Git REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
 
 # used to apply various patches to OpenSSL
-# we are currently patch-free
-
-#find_program(PATCH_PROGRAM patch)
-#if (NOT PATCH_PROGRAM)
-#    message(FATAL_ERROR "Cannot find patch utility. This is only required for Android cross-compilation but due to script complexity "
-#                        "the requirement is always enforced")
-#endif()
+find_program(PATCH_PROGRAM patch)
+if (NOT PATCH_PROGRAM)
+    message(FATAL_ERROR "Cannot find patch utility. This is only required for Android cross-compilation but due to script complexity "
+                        "the requirement is always enforced")
+endif()
 
 # set variables
 ProcessorCount(NUM_JOBS)
@@ -132,126 +130,45 @@ else()
         set(CXXFLAGS ${CMAKE_CXX_FLAGS})
         
         # silence warnings about unused arguments (Clang specific)
-        set(CFLAGS ${CFLAGS} "-Qunused-arguments")
-        set(CXXFLAGS ${CXXFLAGS} "-Qunused-arguments")
+        set(CFLAGS "${CFLAGS} -Qunused-arguments")
+        set(CXXFLAGS "${CXXFLAGS} -Qunused-arguments")
     
         # required environment configuration is already set (by e.g. ndk) so no need to fiddle around with all the OpenSSL options ...
-        if (ANDROID)
-            if (ARMEABI_V7A)
-                set(OPENSSL_PLATFORM "armeabi")
-                set(CONFIGURE_OPENSSL_PARAMS ${CONFIGURE_OPENSSL_PARAMS} "-march=armv7-a")
-            else()
-                if (ANDROID_NDK_ABI_NAME MATCHES "arm64-v8a")
-                    set(OPENSSL_PLATFORM "aarch64")
-                    set(CFLAGS "${CFLAGS} -fno-integrated-as")
-                    set(CXXFLAGS "${CXXFLAGS} -fno-integrated-as")
-                else()
-                    set(OPENSSL_PLATFORM ${ANDROID_NDK_ABI_NAME})
-                endif()
-                
-                if(ANDROID_NDK_ABI_NAME MATCHES "mips64")
-                    set(CFLAGS "${CFLAGS} -fno-integrated-as")
-                    set(CXXFLAGS "${CXXFLAGS} -fno-integrated-as")
-                endif()
-            endif()
-            
-            set(ANDROID_STRING "android")
-            if (ANDROID_ARCH_NAME MATCHES "64")
-                set(ANDROID_STRING "${ANDROID_STRING}64")
-            endif()
-            
-            # ... but we have to convert all the CMake options to environment variables!
-            set(CROSS_SYSROOT ${CMAKE_SYSROOT})
-            set(AS ${CMAKE_ASM_COMPILER})
-            set(AR ${CMAKE_AR})
-            set(LD ${CMAKE_LINKER} ${CMAKE_MODULE_LINKER_FLAGS})
-            
-            # have to surround variables with double quotes, otherwise they will be merged together without any separator
-            set(CC "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILE_OPTIONS_EXTERNAL_TOOLCHAIN} ${CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN} ${CFLAGS} -target ${CMAKE_C_COMPILER_TARGET}")
-            
-            set(COMMAND_CONFIGURE ./Configure ${ANDROID_STRING}-${OPENSSL_PLATFORM} ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
-        else()
-            # The following code is an adapted version of OpenSSL's Setenv-android.sh
-            # Original contents are licensed under the terms of the OpenSSL license
-            # http://www.openssl.org/source/license.html
-            # ####################################
-
-            # cache variables
-            set(ANDROID_NDK "" CACHE STRING "Android NDK directory (for auto discovery)")
-            set(ANDROID_NDK_ROOT "" CACHE STRING "Android NDK root directory")
-            set(ANDROID_EABI "" CACHE STRING "Android EABI (see ANDROID_NDK_ROOT/toolchains for a list of possible values)")
-            set(ANDROID_ARCH "" CACHE STRING "Android architecture (e.g. arch-arm, arch-x86, ...)")
-            set(ANDROID_API "" CACHE STRING "Android API to build against (e.g. android-19)")
-            set(ANDROID_MACHINE "" CACHE STRING "Android machine (e.g. armv7, i686)")
-
-
-            if (NOT ANDROID_NDK AND NOT ANDROID_NDK_ROOT)
-                message(FATAL_ERROR "Please specify ANDROID_NDK (for auto discovery) or ANDROID_NDK_ROOT (manual path)")
-            endif()
-            if (NOT ANDROID_EABI)
-                message(FATAL_ERROR "Please specify ANDROID_EABI")
-            endif()
-            if (NOT ANDROID_ARCH)
-                message(FATAL_ERROR "Please specify ANDROID_ARCH")
-            endif()
-            if (NOT ANDROID_API)
-                message(FATAL_ERROR "Please specify ANDROID_API")
-            endif()
-            if (NOT ANDROID_MACHINE)
-                message(FATAL_ERROR "Please specify ANDROID_MACHINE")
-            endif()
-
-            # try detecting ANDROID_NDK_ROOT
-            if (NOT ANDROID_NDK_ROOT)
-                if (EXISTS "/usr/local/${ANDROID_NDK}")
-                    set(ANDROID_NDK_ROOT "/usr/local/${ANDROID_NDK}")
-                endif()
-                if (EXISTS "/opt/${ANDROID_NDK}")
-                    set(ANDROID_NDK_ROOT "/opt/${ANDROID_NDK}")
-                endif()
-                if (EXISTS "ENV${HOME}/${ANDROID_NDK}")
-                    set(ANDROID_NDK_ROOT "ENV${HOME}/${ANDROID_NDK}")
-                endif()
-                if (EXISTS "ENV${PWD}/${ANDROID_NDK}")
-                    set(ANDROID_NDK_ROOT "ENV${PWD}/${ANDROID_NDK}")
-                endif()
-            endif()
-
-            if (NOT ANDROID_NDK_ROOT)
-                message(FATAL_ERROR "Android NDK root directory not found!")
-            endif()
-
-            if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains")
-                message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains not found!")
-            endif()
-
-            if (NOT EXISTS "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}")
-                message(FATAL_ERROR "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI} not found!")
-            endif()
-
-            ###
-            set(ANDROID_TOOLCHAIN "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_EABI}/prebuilt/linux-x86_64/bin")
-            set(PATH ${ANDROID_TOOLCHAIN})
-            set(ANDROID_SYSROOT ${ANDROID_NDK_ROOT}/platforms/${ANDROID_API}/${ANDROID_ARCH})
-            set(ANDROID_NDK_SYSROOT ${ANDROID_SYSROOT})
-            set(NDK_SYSROOT ${ANDROID_SYSROOT})
-            set(SYSROOT ${ANDROID_SYSROOT})
-            if (ANDROID_ARCH MATCHES "arch-arm")
-                set(IF_EABI "eabi")
-                set(ARCH "arm")
-            else()
-                set(ARCH "x86")
-            endif()
-            set(MACHINE ${ANDROID_MACHINE})
-            set(SYSTEM android)
-            # for OpenSSL
-            set(CROSS_COMPILE "${ARCH}-linux-android${IF_EABI}-")
-            set(ANDROID_DEV ${ANDROID_SYSROOT}/usr)
-            set(HOSTCC gcc) #${CMAKE_C_COMPILER})
-            set(RELEASE "2.6.37")
-            
-            set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
+        if (NOT ANDROID)
+            message(FATAL_ERROR "Use NDK cmake toolchain or cmake android autoconfig")
         endif()
+        
+        if (ARMEABI_V7A)
+            set(OPENSSL_PLATFORM "armeabi")
+            set(CONFIGURE_OPENSSL_PARAMS ${CONFIGURE_OPENSSL_PARAMS} "-march=armv7-a")
+        else()
+            if (CMAKE_ANDROID_ARCH_ABI MATCHES "arm64-v8a")
+                set(OPENSSL_PLATFORM "aarch64")
+            else()
+                set(OPENSSL_PLATFORM ${CMAKE_ANDROID_ARCH_ABI})
+            endif()
+        endif()
+        
+        set(ANDROID_STRING "android")
+        if (CMAKE_ANDROID_ARCH_ABI MATCHES "64")
+            set(ANDROID_STRING "${ANDROID_STRING}64")
+        endif()
+        
+        # copy over both sysroots to a common sysroot (workaround OpenSSL failing without one single sysroot)
+        file(COPY ${ANDROID_SYSTEM_LIBRARY_PATH}/usr DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/sysroot/)
+        file(COPY ${CMAKE_SYSROOT}/usr/include DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/sysroot/usr/)
+        
+        # ... but we have to convert all the CMake options to environment variables!
+        set(CROSS_SYSROOT ${CMAKE_CURRENT_BINARY_DIR}/sysroot/)
+        set(AS ${CMAKE_ASM_COMPILER})
+        set(AR ${CMAKE_AR})
+        set(LD ${CMAKE_LINKER})
+        set(LDFLAGS ${CMAKE_MODULE_LINKER_FLAGS})
+        
+        # have to surround variables with double quotes, otherwise they will be merged together without any separator
+        set(CC "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILE_OPTIONS_EXTERNAL_TOOLCHAIN}${CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN} ${CFLAGS} -target ${CMAKE_C_COMPILER_TARGET}")
+        
+        set(COMMAND_CONFIGURE ./Configure ${ANDROID_STRING}-${OPENSSL_PLATFORM} ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
         set(COMMAND_TEST "true")
     else()                   # detect host system automatically
         set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
@@ -266,7 +183,7 @@ else()
         UPDATE_COMMAND ""
 
         CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
-        PATCH_COMMAND ""
+        PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/openssl-android-clang.patch || true
 
         BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
         BUILD_BYPRODUCTS ${OPENSSL_LIBSSL_PATH} ${OPENSSL_LIBCRYPTO_PATH}
