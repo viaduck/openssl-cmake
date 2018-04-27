@@ -74,3 +74,29 @@ android-armeabi-v7a:
     stage: build
     only:
         - master
+        
+android-x86:
+    image: viaduck/ci:android
+    script:
+        - mkdir build-android-x86
+        - cd build-android-x86
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=x86 -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
+        - make
+        - cd ..
+        - scripts/commit_result.sh x86-android build-android-x86
+    stage: build
+    only:
+        - master
+        
+android-x86_64:
+    image: viaduck/ci:android
+    script:
+        - mkdir build-android-x86_64
+        - cd build-android-x86_64
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=x86_64 -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
+        - make
+        - cd ..
+        - scripts/commit_result.sh x86_64-android build-android-x86_64
+    stage: build
+    only:
+        - master
