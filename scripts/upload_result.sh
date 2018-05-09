@@ -29,10 +29,10 @@ if [[ $PREBUILT_AUTH = ":" ]]; then
     exit 1
 fi
 
-# temporarily rename dir as arch for tarring
-mv $2 $1
+# rename dir as arch for tarring
+mkdir -p $1
+mv $2 $1/$2
 tar czf $1.tar.gz $1
-mv $1 $2
 
 # capture the code while printing the page
 { code=$(curl -u $PREBUILT_AUTH -F "file=@$1.tar.gz" -F 'dir=prebuilts/openssl' -o /dev/stderr -w '%{http_code}' https://mirror.viaduck.org/scripts/upload.py); } 2>&1

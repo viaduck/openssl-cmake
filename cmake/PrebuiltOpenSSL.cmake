@@ -42,13 +42,12 @@ set(PREBUILT_BRANCH ${ARCH_SYSTEM} CACHE STRING "Branch in OpenSSL-Prebuilts to 
 
 # add openssl target
 ExternalProject_Add(openssl
-        GIT_REPOSITORY https://gl.viaduck.org/viaduck/openssl-prebuilts.git
-        GIT_TAG ${PREBUILT_BRANCH}
+        URL https://mirror.viaduck.org/prebuilts/openssl/${PREBUILT_BRANCH}.tar.gz
 
         UPDATE_COMMAND ""
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
-        BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/lib/libcrypto.a
+        BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/usr/local/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/usr/local/lib/libcrypto.a
         INSTALL_COMMAND ""
         TEST_COMMAND ""
 )

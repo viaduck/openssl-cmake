@@ -60,8 +60,8 @@ else()
         include(PrebuiltOpenSSL)
         
         # set library locations if prebuilt branch specified
-        set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/lib/libssl.a)
-        set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/lib/libcrypto.a)
+        set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/usr/local/lib/libssl.a)
+        set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/usr/local/lib/libcrypto.a)
     endif()
     
     # add fake targets to common target
@@ -75,8 +75,8 @@ else()
     target_link_libraries(crypto INTERFACE crypto_lib)
 
     # prebuilt includes
-    target_include_directories(ssl BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/include)
-    target_include_directories(crypto BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/${PREBUILT_BRANCH}/usr/local/include)
+    target_include_directories(ssl BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/usr/local/include)
+    target_include_directories(crypto BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/usr/local/include)
     # local build includes
     target_include_directories(ssl BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/usr/local/include)
     target_include_directories(crypto BEFORE INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/usr/local/include)
