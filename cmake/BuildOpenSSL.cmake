@@ -31,7 +31,7 @@ include(ExternalProject)
 find_package(Git REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
 
-# used to apply various patches to OpenSSL
+# # used to apply various patches to OpenSSL
 find_program(PATCH_PROGRAM patch)
 if (NOT PATCH_PROGRAM)
     message(FATAL_ERROR "Cannot find patch utility. This is only required for Android cross-compilation but due to script complexity "
@@ -42,12 +42,16 @@ endif()
 ProcessorCount(NUM_JOBS)
 set(OS "UNIX")
 
+if (OPENSSL_BUILD_HASH)
+    set(OPENSSL_CHECK_HASH URL_HASH SHA256=${OPENSSL_BUILD_HASH})
+endif()
+
 # if already built, do not build again
 if ((EXISTS ${OPENSSL_LIBSSL_PATH}) AND (EXISTS ${OPENSSL_LIBCRYPTO_PATH}))
     message(WARNING "Not building OpenSSL again. Remove ${OPENSSL_LIBSSL_PATH} and ${OPENSSL_LIBCRYPTO_PATH} for rebuild")
 else()
-    if (NOT OPENSSL_BRANCH)
-        message(FATAL_ERROR "You must specify OPENSSL_BRANCH!")
+    if (NOT OPENSSL_BUILD_VERSION)
+        message(FATAL_ERROR "You must specify OPENSSL_BUILD_VERSION!")
     endif()
 
     if (WIN32 AND NOT CROSS)
@@ -177,9 +181,8 @@ else()
 
     # add openssl target
     ExternalProject_Add(openssl
-        GIT_REPOSITORY git://git.openssl.org/openssl.git
-        GIT_TAG ${OPENSSL_BRANCH}
-
+        URL https://mirror.viaduck.org/openssl/openssl-${OPENSSL_BUILD_VERSION}.tar.gz
+        ${OPENSSL_CHECK_HASH}
         UPDATE_COMMAND ""
 
         CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}

@@ -4,8 +4,9 @@ stages:
     - build         # contains build and test and deploy
 
 variables:
-    OPENSSL_BRANCH: "OpenSSL_1_1_0g"
-    PREBUILTS_REPO: "https://$GIT_USER:$GIT_PASSWORD@gl.viaduck.org/viaduck/openssl-prebuilts.git"
+    OPENSSL_BUILD_VERSION: "1.1.0h"
+    OPENSSL_BUILD_HASH: "5835626cde9e99656585fc7aaa2302a73a7e1340bf8c14fd635a62c66802a517"
+    PREBUILT_AUTH: "$PREBUILT_USER:$PREBUILT_PASSWORD"
     ANDROID_PLATFORM: "android-26"
     ANDROID_NDK: "/android/ndk"
     
@@ -14,11 +15,10 @@ linux-x86_64:
         - mkdir build-linux-x86_64
         - useradd -m -d /home/jdoe jdoe                               # OpenSSL tests must be run as unprivileged user
         - cd build-linux-x86_64
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DOPENSSL_INSTALL_MAN=ON
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DOPENSSL_INSTALL_MAN=ON
         - chmod -R 777 .                                              # jdoe must be able to write to build directory
         - su -l jdoe -c "cd `pwd` && make"                            # build and test as unprivileged
-        - cd ..
-        - scripts/commit_result.sh x86_64-linux build-linux-x86_64
+        - ../scripts/upload_result.sh x86_64-linux usr
     stage: build
     only:
         - master
@@ -28,10 +28,9 @@ windows-x86:
     script:
         - mkdir build-windows-x86
         - cd build-windows-x86
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DOPENSSL_INSTALL_MAN=ON -DCROSS=ON -DCROSS_PREFIX=i686-w64-mingw32- -DCROSS_TARGET=mingw
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DOPENSSL_INSTALL_MAN=ON -DCROSS=ON -DCROSS_PREFIX=i686-w64-mingw32- -DCROSS_TARGET=mingw
         - make
-        - cd ..
-        - scripts/commit_result.sh i686-w64-mingw32 build-windows-x86
+        - ../scripts/commit_result.sh i686-w64-mingw32 usr
     stage: build
     only:
         - master
@@ -41,10 +40,9 @@ windows-x86_64:
     script:
         - mkdir build-windows-x86_64
         - cd build-windows-x86_64
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DOPENSSL_INSTALL_MAN=ON -DCROSS=ON -DCROSS_PREFIX=x86_64-w64-mingw32- -DCROSS_TARGET=mingw64
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DOPENSSL_INSTALL_MAN=ON -DCROSS=ON -DCROSS_PREFIX=x86_64-w64-mingw32- -DCROSS_TARGET=mingw64
         - make
-        - cd ..
-        - scripts/commit_result.sh x86_64-w64-mingw32 build-windows-x86_64
+        - ../scripts/commit_result.sh x86_64-w64-mingw32 usr
     stage: build
     only:
         - master
@@ -54,10 +52,9 @@ android-arm64-v8a:
     script:
         - mkdir build-android-arm64-v8a
         - cd build-android-arm64-v8a
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=arm64-v8a -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=arm64-v8a -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
         - make
-        - cd ..
-        - scripts/commit_result.sh arm64-v8a-android build-android-arm64-v8a
+        - ../scripts/commit_result.sh arm64-v8a-android usr
     stage: build
     only:
         - master
@@ -67,10 +64,9 @@ android-armeabi-v7a:
     script:
         - mkdir build-android-armeabi-v7a
         - cd build-android-armeabi-v7a
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=armeabi-v7a -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=armeabi-v7a -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
         - make
-        - cd ..
-        - scripts/commit_result.sh armeabi-v7a-android build-android-armeabi-v7a
+        - ../scripts/commit_result.sh armeabi-v7a-android usr
     stage: build
     only:
         - master
@@ -80,10 +76,9 @@ android-x86:
     script:
         - mkdir build-android-x86
         - cd build-android-x86
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=x86 -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=x86 -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
         - make
-        - cd ..
-        - scripts/commit_result.sh x86-android build-android-x86
+        - ../scripts/commit_result.sh x86-android usr
     stage: build
     only:
         - master
@@ -93,10 +88,9 @@ android-x86_64:
     script:
         - mkdir build-android-x86_64
         - cd build-android-x86_64
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BRANCH=$OPENSSL_BRANCH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=x86_64 -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=x86_64 -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
         - make
-        - cd ..
-        - scripts/commit_result.sh x86_64-android build-android-x86_64
+        - ../scripts/commit_result.sh x86_64-android usr
     stage: build
     only:
         - master
