@@ -26,7 +26,7 @@
 # early exit when no secrets are set
 if [[ $PREBUILT_AUTH = ":" ]]; then
     echo "No secrets to upload result."
-    exit 1
+    exit 0
 fi
 
 # rename dir as arch for tarring
