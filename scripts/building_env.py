@@ -57,6 +57,11 @@ l.extend(argv[offset+1:])                             # routed commands
 
 l[0] = '"'+l[0]+'"'
 
+# ensure target dir exists for mingw cross
+target_dir = binary_openssl_dir_source+"/../../../usr/local/bin"
+if not os.path.exists(target_dir):
+    os.makedirs(target_dir)
+
 # read environment from file if cross-compiling
 if os_s == "LINUX_CROSS_ANDROID":
     expr = re.compile('^(.*?)="(.*?)"', re.MULTILINE | re.DOTALL)
