@@ -29,8 +29,13 @@ See https://github.com/axr/solar-cmake
 # "There are many more known variants/revisions that we do not handle/detect."
 
 set(archdetect_c_code "
-#if defined(__arm__) || defined(__TARGET_ARCH_ARM)
-    #if defined(__ARM_ARCH_7__) \\
+#if defined(__arm__) || defined(__TARGET_ARCH_ARM) || defined(_M_ARM) || defined(__aarch64__) || defined(__ARM64__)
+    #if defined(__ARM64_ARCH_8__) \\
+        || defined(__aarch64__) \\
+        || defined(__ARMv8__) \\
+        || defined(__ARMv8_A__)
+        #error cmake_ARCH arm64-v8a
+    #elif defined(__ARM_ARCH_7__) \\
         || defined(__ARM_ARCH_7A__) \\
         || defined(__ARM_ARCH_7R__) \\
         || defined(__ARM_ARCH_7M__) \\
