@@ -68,9 +68,9 @@ set(archdetect_c_code "
     #else
         #error cmake_ARCH ppc
     #endif
+#else
+    #error cmake_ARCH unknown
 #endif
-
-#error cmake_ARCH unknown
 ")
 
 # Set ppc_support to TRUE before including this file or ppc and ppc64
