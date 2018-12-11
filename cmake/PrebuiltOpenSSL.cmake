@@ -28,16 +28,24 @@ include(ExternalProject)
 include(TargetArch)
 
 # autodetect PREBUILT_BRANCH
-target_architecture(ARCH)
-if (WIN32)
-    # prebuilts on windows use mingw-w64 for building
-    set(ARCH_SYSTEM ${ARCH}-w64-mingw32)
-elseif(UNIX AND NOT APPLE)
-    set(ARCH_SYSTEM ${ARCH}-linux)
-else()
-    message(FATAL_ERROR "Prebuilts this system are not available (yet)!")
+if (NOT PREBUILT_BRANCH)
+    target_architecture(ARCH)
+    if (${ARCH} STREQUAL "unknown")
+        message(FATAL_ERROR "Architecture detection failed. Please specify manually.")
+    endif()
+    
+    if (WIN32)
+        # prebuilts on windows use mingw-w64 for building
+        set(ARCH_SYSTEM ${ARCH}-w64-mingw32)
+    elseif(ANDROID)
+        set(ARCH_SYSTEM ${ARCH}-android)
+    elseif(UNIX AND NOT APPLE)
+        set(ARCH_SYSTEM ${ARCH}-linux)
+    else()
+        message(FATAL_ERROR "Prebuilts for this system are not available (yet)!")
+    endif()
+    message(STATUS "Using ${ARCH_SYSTEM} prebuilts")
 endif()
-message(STATUS "Using ${ARCH_SYSTEM} prebuilts")
 set(PREBUILT_BRANCH ${ARCH_SYSTEM} CACHE STRING "Branch in OpenSSL-Prebuilts to checkout from")
 
 # add openssl target
