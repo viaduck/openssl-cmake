@@ -34,8 +34,11 @@ set(archdetect_c_code "
         || defined(__ARM_ARCH_7A__) \\
         || defined(__ARM_ARCH_7R__) \\
         || defined(__ARM_ARCH_7M__) \\
+        || defined(__ARM_ARCH_7S__) \\
+        || defined(_ARM_ARCH_7) \\
+        || defined(__CORE_CORTEXA__) \\
         || (defined(__TARGET_ARCH_ARM) && __TARGET_ARCH_ARM-0 >= 7)
-        #error cmake_ARCH armv7
+        #error cmake_ARCH armeabi-v7a
     #elif defined(__ARM_ARCH_6__) \\
         || defined(__ARM_ARCH_6J__) \\
         || defined(__ARM_ARCH_6T2__) \\
@@ -140,7 +143,7 @@ function(target_architecture output_var)
         )
 
         # Parse the architecture name from the compiler output
-        string(REGEX MATCH "cmake_ARCH ([a-zA-Z0-9_]+)" ARCH "${ARCH}")
+        string(REGEX MATCH "cmake_ARCH ([a-zA-Z0-9_\-]+)" ARCH "${ARCH}")
 
         # Get rid of the value marker leaving just the architecture name
         string(REPLACE "cmake_ARCH " "" ARCH "${ARCH}")
