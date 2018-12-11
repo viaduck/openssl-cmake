@@ -71,14 +71,14 @@ android-armeabi-v7a:
     only:
         - master
         
-android-x86:
+android-i686:
     image: viaduck/ci:android
     script:
-        - mkdir build-android-x86
-        - cd build-android-x86
+        - mkdir build-android-i686
+        - cd build-android-i686
         - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DCROSS_ANDROID=ON -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=x86 -DANDROID_TOOLCHAIN=clang -DANDROID_NDK=$ANDROID_NDK -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
         - make
-        - ../scripts/upload_result.sh x86-android usr
+        - ../scripts/upload_result.sh i686-android usr
     stage: build
     only:
         - master
