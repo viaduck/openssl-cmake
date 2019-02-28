@@ -48,9 +48,14 @@ if (NOT PREBUILT_BRANCH)
 endif()
 set(PREBUILT_BRANCH ${ARCH_SYSTEM} CACHE STRING "Branch in OpenSSL-Prebuilts to checkout from")
 
+# auto version
+if (NOT OPENSSL_PREBUILT_VERSION)
+    set(OPENSSL_PREBUILT_VERSION "1.1.0j")
+endif()
+
 # add openssl target
 ExternalProject_Add(openssl
-        URL https://mirror.viaduck.org/prebuilts/openssl/${PREBUILT_BRANCH}.tar.gz
+        URL https://builds.viaduck.org/prebuilts/openssl/${OPENSSL_PREBUILT_VERSION}/${PREBUILT_BRANCH}.tar.gz
 
         UPDATE_COMMAND ""
         CONFIGURE_COMMAND ""
