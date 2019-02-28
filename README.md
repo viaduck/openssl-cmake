@@ -13,8 +13,8 @@ To use the system OpenSSL, simply set `SYSTEM_OPENSSL=ON`.
 
 ## Prebuilt OpenSSL
 Default behaviour is the download of a prebuilt binary. This is only intended
-as a convenience for debugging purposes and NOT for production use. Binaries are
-prebuilt for Windows (x86 and x86_64) and GNU/Linux (x86_64).
+as a convenience for debugging purposes and NOT for production use. 
+Available prebuilt binaries can be viewed [here](https://builds.viaduck.org/prebuilts/openssl/).
 
 ## Build OpenSSL
 In order to build `OpenSSL`, set `BUILD_OPENSSL=ON` along with the branch or 
