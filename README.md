@@ -28,7 +28,8 @@ Cross compilation is enabled using `CROSS=ON` and the target is specified using
 Android requires a special `CROSS_ANDROID=ON`. Using `OpenSSL-CMake` from 
 Gradle's native build does not require additional settings. Otherwise, it is 
 required to set the general NDK variables `ANDROID_NDK_ROOT`, `ANDROID_EABI`, 
-`ANDROID_ARCH`, `ANDROID_API`, `ANDROID_MACHINE`.
+`ANDROID_ARCH`, `ANDROID_API`, `ANDROID_MACHINE`.  
+Cross compile was tested with NDK r18b, r19c and r20.
 
 ## Usage
 1. Add `OpenSSL-CMake` as a submodule to your Git project using `git submodule 
