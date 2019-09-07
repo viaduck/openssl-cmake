@@ -34,9 +34,17 @@ set(SYSTEM_OPENSSL OFF CACHE STRING "Use system-provided openssl libraries (inst
 # allow including our modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+# mimic system ssl and crypto targets
+add_library(ssl INTERFACE)
+add_library(crypto INTERFACE)
+
 if (SYSTEM_OPENSSL)
     # use system provided openssl
     find_package(OpenSSL REQUIRED)
+
+    # link fake targets
+    target_link_libraries(ssl INTERFACE OpenSSL::SSL)
+    target_link_libraries(crypto INTERFACE OpenSSL::Crypto)
     add_custom_target(openssl)
 else()
     # build our own or use prebuilts
@@ -45,10 +53,7 @@ else()
     add_library(ssl_lib STATIC IMPORTED GLOBAL)
     add_library(crypto_lib STATIC IMPORTED GLOBAL)
 
-    # mimic system ssl and crypto targets
-    add_library(ssl INTERFACE)
     target_link_libraries(ssl INTERFACE ssl_lib)
-    add_library(crypto INTERFACE)
     target_link_libraries(crypto INTERFACE crypto_lib)
 
     # set up prefix
@@ -79,5 +84,4 @@ else()
     # add fake targets to common target
     add_dependencies(ssl_lib openssl)
     add_dependencies(crypto_lib openssl)
-    
 endif()
