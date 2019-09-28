@@ -113,9 +113,7 @@ else()
     
     # set install command depending of choice on man page generation
     if (OPENSSL_INSTALL_MAN)
-        set(INSTALL_OPENSSL "install")
-    else()
-        set(INSTALL_OPENSSL "install_sw")
+        set(INSTALL_OPENSSL_MAN "install_docs")
     endif()
     
     # disable building tests
@@ -126,7 +124,7 @@ else()
 
     # cross-compiling
     if (CROSS)
-        set(COMMAND_CONFIGURE ./Configure ${CONFIGURE_OPENSSL_PARAMS} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES})
+        set(COMMAND_CONFIGURE ./Configure ${CONFIGURE_OPENSSL_PARAMS} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES} --prefix=/usr/local/)
         set(COMMAND_TEST "true")
     elseif(CROSS_ANDROID)
         
@@ -202,7 +200,7 @@ else()
         TEST_COMMAND ${COMMAND_TEST}
 
         INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-        COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} DESTDIR=${CMAKE_CURRENT_BINARY_DIR} ${INSTALL_OPENSSL}
+        COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} DESTDIR=${CMAKE_CURRENT_BINARY_DIR} install_sw ${INSTALL_OPENSSL_MAN}
         COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
 
         LOG_INSTALL 1
