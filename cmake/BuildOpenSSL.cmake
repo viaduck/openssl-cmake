@@ -105,21 +105,24 @@ else()
     # python helper script for corrent building environment
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
 
-    # no-dsa no-rc2 no-des break tests, therefore we need them
-    set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso)
+    # disable everything we dont need
+    set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des)
 
     # additional configure script parameters
-    set(CONFIGURE_OPENSSL_PARAMS --api=1.1.0 --libdir=lib)
-
+    set(CONFIGURE_OPENSSL_PARAMS --libdir=lib)
+    
     # set install command depending of choice on man page generation
     if (OPENSSL_INSTALL_MAN)
         set(INSTALL_OPENSSL "install")
     else()
         set(INSTALL_OPENSSL "install_sw")
     endif()
-
-    # set OpenSSL API compatibility version
-    add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
+    
+    # disable building tests
+    if (NOT OPENSSL_ENABLE_TESTS)
+        set(CONFIGURE_OPENSSL_MODULES ${CONFIGURE_OPENSSL_MODULES} no-tests)
+        set(COMMAND_TEST "true")
+    endif()
 
     # cross-compiling
     if (CROSS)
@@ -178,9 +181,12 @@ else()
         set(COMMAND_TEST "true")
     else()                   # detect host system automatically
         set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
-        set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} test)
+        
+        if (NOT COMMAND_TEST)
+            set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} test)
+        endif()
     endif()
-
+    
     # add openssl target
     ExternalProject_Add(openssl
         URL https://mirror.viaduck.org/openssl/openssl-${OPENSSL_BUILD_VERSION}.tar.gz
@@ -188,8 +194,6 @@ else()
         UPDATE_COMMAND ""
 
         CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
-        PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/openssl-android-clang.patch || true
-        COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/0001-Configurations-10-main.conf-add-android64-x86_64-tar.patch || true
 
         BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
         BUILD_BYPRODUCTS ${OPENSSL_LIBSSL_PATH} ${OPENSSL_LIBCRYPTO_PATH}

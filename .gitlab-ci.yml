@@ -4,10 +4,10 @@ stages:
     - build         # contains build and test and deploy
 
 variables:
-    OPENSSL_BUILD_VERSION: "1.1.0l"
-    OPENSSL_BUILD_HASH: "74a2f756c64fd7386a29184dc0344f4831192d61dc2481a93a4c5dd727f41148"
+    OPENSSL_BUILD_VERSION: "1.1.1d"
+    OPENSSL_BUILD_HASH: "1e3a91bc1f9dfce01af26026f856e064eab4c8ee0a8f457b5ae30b40b8b711f2"
     PREBUILT_AUTH: "$PREBUILT_USER:$PREBUILT_PASSWORD"
-    ANDROID_PLATFORM: "android-29"
+    ANDROID_PLATFORM: "android-23"
     ANDROID_NDK: "/android/ndk"
     
 linux-x86_64:
@@ -15,7 +15,7 @@ linux-x86_64:
         - mkdir build-linux-x86_64
         - useradd -m -d /home/jdoe jdoe                               # OpenSSL tests must be run as unprivileged user
         - cd build-linux-x86_64
-        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DOPENSSL_INSTALL_MAN=ON
+        - cmake ../ -DBUILD_OPENSSL=ON -DOPENSSL_BUILD_VERSION=$OPENSSL_BUILD_VERSION -DOPENSSL_BUILD_HASH=$OPENSSL_BUILD_HASH -DOPENSSL_INSTALL_MAN=ON -DOPENSSL_ENABLE_TESTS=ON
         - chmod -R 777 .                                              # jdoe must be able to write to build directory
         - su -l jdoe -c "cd `pwd` && make"                            # build and test as unprivileged
         - ../scripts/upload_result.sh x86_64-linux usr
