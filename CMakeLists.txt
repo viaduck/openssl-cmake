@@ -22,6 +22,7 @@
 #
 
 cmake_minimum_required(VERSION 3.2)
+project(openssl-cmake)
 
 set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
 set(OPENSSL_BUILD_VERSION OFF CACHE STRING "OpenSSL version to build")
