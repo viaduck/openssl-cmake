@@ -110,6 +110,9 @@ else()
 
     # additional configure script parameters
     set(CONFIGURE_OPENSSL_PARAMS --libdir=lib)
+    if (OPENSSL_DEBUG_BUILD)
+        set(CONFIGURE_OPENSSL_PARAMS "${CONFIGURE_OPENSSL_PARAMS} no-asm -g3 -O0 -fno-omit-frame-pointer -fno-inline-functions")
+    endif()
     
     # set install command depending of choice on man page generation
     if (OPENSSL_INSTALL_MAN)
