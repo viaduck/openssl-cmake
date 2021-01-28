@@ -79,8 +79,8 @@ else()
     set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
 
     # set include locations
-    target_include_directories(ssl BEFORE INTERFACE ${OPENSSL_PREFIX}/usr/local/include)
-    target_include_directories(crypto BEFORE INTERFACE ${OPENSSL_PREFIX}/usr/local/include)
+    target_include_directories(ssl BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include>)
+    target_include_directories(crypto BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include>)
 
     # add fake targets to common target
     add_dependencies(ssl_lib openssl)
