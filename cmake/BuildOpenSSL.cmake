@@ -105,8 +105,14 @@ else()
     # python helper script for corrent building environment
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
 
-    # disable everything we dont need
-    set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des)
+    # configure openssl modules to be built
+    if(DEFINED OPENSSL_CONFIGURE_OPTIONS)
+        # let user set options to support
+        set(CONFIGURE_OPENSSL_MODULES ${OPENSSL_CONFIGURE_OPTIONS})
+    else()
+        # disable everything we dont need by default
+        set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des)
+    endif()
 
     # additional configure script parameters
     set(CONFIGURE_OPENSSL_PARAMS --libdir=lib)
