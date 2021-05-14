@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2015-2018 The ViaDuck Project
+# Copyright (c) 2015-2021 The ViaDuck Project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ project(openssl-cmake)
 set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
 set(OPENSSL_BUILD_VERSION OFF CACHE STRING "OpenSSL version to build")
 set(OPENSSL_INSTALL_MAN OFF CACHE STRING "Install man pages?")
+set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des" CACHE STRING "OpenSSL configure options")
 set(CROSS_ANDROID OFF CACHE BOOL "Cross-compiling for Android?")
 set(CROSS OFF CACHE BOOL "Cross-compiling?")
 set(CROSS_TARGET OFF CACHE STRING "Cross-compilation target")

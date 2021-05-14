@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2015-2018 The ViaDuck Project
+# Copyright (c) 2015-2021 The ViaDuck Project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -105,8 +105,8 @@ else()
     # python helper script for corrent building environment
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
 
-    # disable everything we dont need
-    set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des)
+    # user-specified modules
+    set(CONFIGURE_OPENSSL_MODULES ${OPENSSL_MODULES})
 
     # additional configure script parameters
     set(CONFIGURE_OPENSSL_PARAMS --libdir=lib)
