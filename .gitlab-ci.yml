@@ -20,8 +20,6 @@ linux-x86_64:
         - su -l jdoe -c "cd `pwd` && make"                            # build and test as unprivileged
         - ../scripts/upload_result.sh x86_64-linux usr
     stage: build
-    only:
-        - master
 
 windows-x86:
     image: viaduck/ci:mingw
@@ -32,8 +30,6 @@ windows-x86:
         - make
         - ../scripts/upload_result.sh i686-w64-mingw32 usr
     stage: build
-    only:
-        - master
 
 windows-x86_64:
     image: viaduck/ci:mingw
@@ -44,8 +40,6 @@ windows-x86_64:
         - make
         - ../scripts/upload_result.sh x86_64-w64-mingw32 usr
     stage: build
-    only:
-        - master
 
 android-arm64-v8a:
     image: viaduck/ci:android
@@ -56,8 +50,6 @@ android-arm64-v8a:
         - make
         - ../scripts/upload_result.sh arm64-v8a-android usr
     stage: build
-    only:
-        - master
         
 android-armeabi-v7a:
     image: viaduck/ci:android
@@ -68,8 +60,6 @@ android-armeabi-v7a:
         - make
         - ../scripts/upload_result.sh armeabi-v7a-android usr
     stage: build
-    only:
-        - master
         
 android-i686:
     image: viaduck/ci:android
@@ -80,8 +70,6 @@ android-i686:
         - make
         - ../scripts/upload_result.sh i686-android usr
     stage: build
-    only:
-        - master
         
 android-x86_64:
     image: viaduck/ci:android
@@ -92,5 +80,3 @@ android-x86_64:
         - make
         - ../scripts/upload_result.sh x86_64-android usr
     stage: build
-    only:
-        - master
