@@ -24,6 +24,11 @@
 cmake_minimum_required(VERSION 3.2)
 project(openssl-cmake)
 
+if (POLICY CMP0135)
+    # policy CMP0135 will use OLD behavior for consistency
+    cmake_policy(SET CMP0135 OLD)
+endif()
+
 set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
 set(OPENSSL_BUILD_VERSION OFF CACHE STRING "OpenSSL version to build")
 set(OPENSSL_INSTALL_MAN OFF CACHE STRING "Install man pages?")
