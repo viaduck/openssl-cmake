@@ -15,6 +15,7 @@ To use the system OpenSSL, simply set `SYSTEM_OPENSSL=ON`.
 Default behaviour is the download of a prebuilt binary. This is only intended
 as a convenience for debugging purposes and NOT for production use. 
 Available prebuilt binaries can be viewed [here](https://builds.viaduck.org/prebuilts/openssl/).
+The prebuilt Windows binaries are built with MinGW-w64, so they may not be compatible with MSVC.
 
 ## Build OpenSSL
 In order to build `OpenSSL`, set `BUILD_OPENSSL=ON` along with the branch or 
