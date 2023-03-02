@@ -50,7 +50,7 @@ set(PREBUILT_BRANCH ${ARCH_SYSTEM} CACHE STRING "Branch in OpenSSL-Prebuilts to 
 
 # auto version
 if (NOT OPENSSL_PREBUILT_VERSION)
-    set(OPENSSL_PREBUILT_VERSION "1.1.1s")
+    set(OPENSSL_PREBUILT_VERSION "1.1.1t")
 endif()
 
 # add openssl target

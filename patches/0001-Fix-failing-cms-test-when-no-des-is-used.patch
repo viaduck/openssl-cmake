@@ -1,0 +1,36 @@
+From 87da6db1773f7741e7f92f40907e3282586da28a Mon Sep 17 00:00:00 2001
+From: Bernd Edlinger <bernd.edlinger@hotmail.de>
+Date: Mon, 13 Feb 2023 12:58:33 +0100
+Subject: [PATCH] Fix failing cms test when no-des is used
+
+The test tries to use DES but that may not be available.
+But for the purpose of regression testing CVE-2023-0215
+the cipher is not relevant, so we use AES-128 instead.
+
+Fixes #20249
+
+Reviewed-by: Matt Caswell <matt@openssl.org>
+Reviewed-by: Todd Short <todd.short@me.com>
+(Merged from https://github.com/openssl/openssl/pull/20276)
+
+(cherry picked from commit c400a1fe477b44a5eacbad2be8d50f2eaa92925c)
+---
+ test/recipes/80-test_cms.t | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/recipes/80-test_cms.t b/test/recipes/80-test_cms.t
+index abe299b6a2..cabbe3ecdf 100644
+--- a/test/recipes/80-test_cms.t
++++ b/test/recipes/80-test_cms.t
+@@ -989,7 +989,7 @@ with({ exit_checker => sub { return shift == 6; } },
+     sub {
+         ok(run(app(['openssl', 'cms', '-encrypt',
+                     '-in', srctop_file("test", "smcont.txt"),
+-                    '-stream', '-recip',
++                    '-aes128', '-stream', '-recip',
+                     srctop_file("test/smime-certs", "badrsa.pem"),
+                    ])),
+             "Check failure during BIO setup with -stream is handled correctly");
+-- 
+2.35.3
+
