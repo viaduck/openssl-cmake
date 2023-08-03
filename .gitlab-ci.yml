@@ -4,8 +4,8 @@ stages:
     - build         # contains build and test and deploy
 
 variables:
-    OPENSSL_BUILD_VERSION: "1.1.1u"
-    OPENSSL_BUILD_HASH: "e2f8d84b523eecd06c7be7626830370300fbcc15386bf5142d72758f6963ebc6"
+    OPENSSL_BUILD_VERSION: "1.1.1v"
+    OPENSSL_BUILD_HASH: "d6697e2871e77238460402e9362d47d18382b15ef9f246aba6c7bd780d38a6b0"
     PREBUILT_AUTH: "$PREBUILT_USER:$PREBUILT_PASSWORD"
     ANDROID_PLATFORM: "android-23"
     ANDROID_NDK: "/android/ndk"
