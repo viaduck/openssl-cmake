@@ -1,0 +1,36 @@
+From 48685e37684258085532a2a62fefd08098f9a62f Mon Sep 17 00:00:00 2001
+From: Steffen Klee <steffen.klee@gmail.com>
+Date: Wed, 20 Sep 2023 00:04:18 +0200
+Subject: [PATCH] Fix test_cms if DSA is not supported
+
+CLA: trivial
+---
+ test/recipes/80-test_cms.t | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/test/recipes/80-test_cms.t b/test/recipes/80-test_cms.t
+index 21c683c404..3857916105 100644
+--- a/test/recipes/80-test_cms.t
++++ b/test/recipes/80-test_cms.t
+@@ -1144,9 +1144,13 @@ with({ exit_checker => sub { return shift == 6; } },
+ # Test case for return value mis-check reported in #21986
+ with({ exit_checker => sub { return shift == 3; } },
+     sub {
+-        ok(run(app(['openssl', 'cms', '-sign',
+-                    '-in', srctop_file("test", "smcont.txt"),
+-                    '-signer', srctop_file("test/smime-certs", "smdsa1.pem"),
+-                    '-md', 'SHAKE256'])),
+-           "issue#21986");
++        SKIP: {
++          skip "DSA is not supported in this build", 1 if $no_dsa;
++
++          ok(run(app(['openssl', 'cms', '-sign',
++                      '-in', srctop_file("test", "smcont.txt"),
++                      '-signer', srctop_file("test/smime-certs", "smdsa1.pem"),
++                      '-md', 'SHAKE256'])),
++            "issue#21986");
++        }
+     });
+-- 
+2.42.0
+
