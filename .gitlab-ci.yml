@@ -1,4 +1,4 @@
-image: viaduck/ci
+image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/viaduck/ci
 
 stages:
     - build         # contains build and test and deploy
@@ -8,8 +8,7 @@ variables:
     OPENSSL_BUILD_HASH: "f0316a2ebd89e7f2352976445458689f80302093788c466692fb2a188b2eacf6"
     PREBUILT_AUTH: "$PREBUILT_USER:$PREBUILT_PASSWORD"
     ANDROID_PLATFORM: "android-23"
-    ANDROID_NDK: "/android/ndk"
-    
+ 
 linux-x86_64:
     script:
         - mkdir build-linux-x86_64
