@@ -24,6 +24,8 @@
 cmake_minimum_required(VERSION 3.2)
 project(openssl-cmake)
 
+include(GNUInstallDirs)
+
 if (POLICY CMP0135)
     # policy CMP0135 will use OLD behavior for consistency
     cmake_policy(SET CMP0135 OLD)
@@ -55,7 +57,7 @@ if (SYSTEM_OPENSSL)
     add_custom_target(openssl)
 else()
     # build our own or use prebuilts
-    
+
     # set up fake targets
     add_library(ssl_lib STATIC IMPORTED GLOBAL)
     add_library(crypto_lib STATIC IMPORTED GLOBAL)
@@ -72,14 +74,14 @@ else()
 
     set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.a)
     set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.a)
-    
+
     # set up openssl target
     if (BUILD_OPENSSL)
         include(BuildOpenSSL)
     else()
         include(PrebuiltOpenSSL)
     endif()
-    
+
     # set import locations
     set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
     set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
@@ -91,4 +93,9 @@ else()
     # add fake targets to common target
     add_dependencies(ssl_lib openssl)
     add_dependencies(crypto_lib openssl)
+
+    install(DIRECTORY ${OPENSSL_PREFIX}/usr/local/include/
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(DIRECTORY ${OPENSSL_PREFIX}/usr/local/lib/
+            DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
