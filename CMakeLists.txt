@@ -59,7 +59,7 @@ else()
     
     # set up prefix
     if (BUILD_OPENSSL)
-        set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+        set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/openssl-build/)
     else()
         set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl)
     endif()
@@ -93,7 +93,10 @@ else()
     target_include_directories(ssl BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_INCLUDE_DIR}>)
     target_include_directories(crypto BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_INCLUDE_DIR}>)
 
-    # add fake targets to common target
-    add_dependencies(ssl_lib openssl)
-    add_dependencies(crypto_lib openssl)
+    install(DIRECTORY ${OPENSSL_PREFIX}/usr/local/bin/ TYPE BIN)
+    install(DIRECTORY ${OPENSSL_PREFIX}/usr/local/include/ TYPE INCLUDE)
+    install(DIRECTORY ${OPENSSL_PREFIX}/usr/local/lib/ TYPE LIB)
+    if (OPENSSL_INSTALL_MAN)
+        install(DIRECTORY ${OPENSSL_PREFIX}/usr/local/share/ TYPE DATA)
+    endif()
 endif()
