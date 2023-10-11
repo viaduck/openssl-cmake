@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2015-2021 The ViaDuck Project
+# Copyright (c) 2015-2023 The ViaDuck Project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@ endif()
 
 set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
 set(OPENSSL_BUILD_VERSION OFF CACHE STRING "OpenSSL version to build")
+set(OPENSSL_USE_STATIC_LIBS ON CACHE STRING "OpenSSL static libs are preferred over shared libs")
 set(OPENSSL_INSTALL_MAN OFF CACHE STRING "Install man pages?")
 set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des" CACHE STRING "OpenSSL configure options")
 set(CROSS_ANDROID OFF CACHE BOOL "Cross-compiling for Android?")
@@ -56,22 +57,16 @@ if (SYSTEM_OPENSSL)
 else()
     # build our own or use prebuilts
     
-    # set up fake targets
-    add_library(ssl_lib STATIC IMPORTED GLOBAL)
-    add_library(crypto_lib STATIC IMPORTED GLOBAL)
-
-    target_link_libraries(ssl INTERFACE ssl_lib)
-    target_link_libraries(crypto INTERFACE crypto_lib)
-
     # set up prefix
     if (BUILD_OPENSSL)
         set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
     else()
         set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl)
     endif()
-
-    set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.a)
-    set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.a)
+    
+    # predict byproduct names and include directory
+    include(ByproductsOpenSSL)
+    GetOpenSSLByproducts(${OPENSSL_PREFIX} OPENSSL_BYPRODUCTS OPENSSL_INCLUDE_DIR)
     
     # set up openssl target
     if (BUILD_OPENSSL)
@@ -80,13 +75,23 @@ else()
         include(PrebuiltOpenSSL)
     endif()
     
-    # set import locations
-    set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
-    set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
+    # add imported targets to common target
+    add_dependencies(ssl_static_lib openssl)
+    add_dependencies(ssl_shared_lib openssl)
+    add_dependencies(crypto_static_lib openssl)
+    add_dependencies(crypto_shared_lib openssl)
+    
+    if (OPENSSL_USE_STATIC_LIBS)
+        target_link_libraries(ssl INTERFACE ssl_static_lib)
+        target_link_libraries(crypto INTERFACE crypto_static_lib)
+    else()
+        target_link_libraries(ssl INTERFACE ssl_shared_lib)
+        target_link_libraries(crypto INTERFACE crypto_shared_lib)
+    endif()
 
     # set include locations
-    target_include_directories(ssl BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include>)
-    target_include_directories(crypto BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include>)
+    target_include_directories(ssl BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_INCLUDE_DIR}>)
+    target_include_directories(crypto BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_INCLUDE_DIR}>)
 
     # add fake targets to common target
     add_dependencies(ssl_lib openssl)

@@ -60,7 +60,7 @@ ExternalProject_Add(openssl
         UPDATE_COMMAND ""
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
-        BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/usr/local/lib/libssl.a ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl/usr/local/lib/libcrypto.a
+        BUILD_BYPRODUCTS ${OPENSSL_BYPRODUCTS}
         INSTALL_COMMAND ""
         TEST_COMMAND ""
 )
