@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2015-2018 The ViaDuck Project
+# Copyright (c) 2015-2023 The ViaDuck Project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,63 +25,74 @@
 # - working directory
 # - on windows: uses msys' bash for command execution (openssl's scripts need an UNIX-like environment with perl)
 
-from subprocess import PIPE, Popen
-from sys import argv, exit
+import argparse
 import os, re
+from subprocess import PIPE, Popen
+from sys import exit
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', '--verbose', action='store_true')
+parser.add_argument('--bash', nargs='?')
+parser.add_argument('--make', nargs='?')
+parser.add_argument('--envfile')
+parser.add_argument('os')
+parser.add_argument('cwd')
+parser.add_argument('args', nargs='+')
+args = parser.parse_args()
+
+if args.verbose:
+    print(args)
 
 env = os.environ
-l = []
+env_sep = ';' if args.os == 'WIN32' else ':'
 
-os_s = argv[1]                                      # operating system
-offset = 2          # 0: this script's path, 1: operating system
+def add_env(k, v):
+    global env
 
-if os_s == "WIN32":
-    offset = 4  # 2: MSYS_BASH_PATH, 3: CMAKE_MAKE_PROGRAM
+    if k == 'PATH':
+        env[k] = v + ('' if v.endswith(env_sep) else env_sep) + env[k]
+    else:
+        env[k] = v
 
-    #
-    bash = argv[2]
-    msys_path = os.path.dirname(bash)
-    mingw_path = os.path.dirname(argv[3])
+    if args.verbose:
+        print(f'Updated env[{k}] to "{v}"')
 
-    # append ; to PATH if needed
-    if not env['PATH'].endswith(";"):
-        env['PATH'] += ";"
+# add bash and make directories to path if specified
+if args.bash is not None and len(args.bash) > 0:
+    add_env('PATH', os.path.dirname(args.bash))
+if args.make is not None and len(args.make) > 0:
+    add_env('PATH', os.path.dirname(args.make))
 
-    # include path of msys binaries (perl, cd etc.) and building tools (gcc, ld etc.)
-    env['PATH'] = ";".join([msys_path, mingw_path])+";"+env['PATH']
-    env['MAKEFLAGS'] = ''            # otherwise: internal error: invalid --jobserver-fds string `gmake_semaphore_1824'
+# os-specifics
+if args.os == 'WIN32':
+    # otherwise: internal error: invalid --jobserver-fds string `gmake_semaphore_1824'
+    add_env('MAKEFLAGS', '')
+elif args.os == 'LINUX_CROSS_ANDROID':
+    # parse A="B" where B has all quotes escaped
+    pattern = re.compile(r'^(.*?)="((?:\\.|[^"\\])*)"', re.MULTILINE | re.DOTALL)
 
+    # parse env vars from file
+    with open(args.envfile, 'r') as f:
+        content = f.read()
 
-binary_openssl_dir_source = argv[offset]+"/"             # downloaded openssl source dir
-l.extend(argv[offset+1:])                             # routed commands
+    # unescape and save all env vars
+    for k, v in pattern.findall(content):
+        add_env(k, v.replace("\\\"", "\""))
 
-l[0] = '"'+l[0]+'"'
+# build command-line
+cmd_exec, cmd_args = args.args[0], ' '.join(args.args[1:])
+cmd_line = f'"{cmd_exec}" {cmd_args} || exit $?'
 
-# ensure target dir exists for mingw cross
-target_dir = binary_openssl_dir_source+"/../../../usr/local/bin"
-if not os.path.exists(target_dir):
-    os.makedirs(target_dir)
-
-# read environment from file if cross-compiling
-if os_s == "LINUX_CROSS_ANDROID":
-    expr = re.compile('^(.*?)="(.*?)"', re.MULTILINE | re.DOTALL)
-    f = open(binary_openssl_dir_source+"/../../../buildenv.txt", "r")
-    content = f.read()
-    f.close()
-
-    for k, v in expr.findall(content):
-        if k != "PATH":
-            env[k] = v.replace('"', '')
-        else:
-            env[k] = v.replace('"', '')+":"+env[k]
+if args.verbose:
+    print(f'Built cmd_line = "{cmd_line}"')
 
 proc = None
-if os_s == "WIN32":
+if args.os == 'WIN32':
     # we must emulate a UNIX environment to build openssl using mingw
-    proc = Popen(bash, env=env, cwd=binary_openssl_dir_source, stdin=PIPE, universal_newlines=True)
-    proc.communicate(input=" ".join(l)+" || exit $?")
+    proc = Popen(bash, env=env, cwd=args.cwd, stdin=PIPE, universal_newlines=True)
+    proc.communicate(input=cmd_line)
 else:
-    proc = Popen(" ".join(l)+" || exit $?", shell=True, env=env, cwd=binary_openssl_dir_source)
+    proc = Popen(cmd_line, env=env, cwd=args.cwd, shell=True)
     proc.communicate()
 
 exit(proc.returncode)

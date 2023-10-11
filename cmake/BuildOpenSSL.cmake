@@ -103,7 +103,8 @@ else()
     endif()
 
     # python helper script for corrent building environment
-    set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
+    set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/building_env.py
+        --bash "${MSYS_BASH}" --make "${MINGW_MAKE}" --envfile "${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt" ${OS})
 
     # user-specified modules
     set(CONFIGURE_OPENSSL_MODULES ${OPENSSL_MODULES})
@@ -131,19 +132,12 @@ else()
             ${CONFIGURE_OPENSSL_MODULES} --prefix=/usr/local/)
         set(COMMAND_TEST "true")
     elseif(CROSS_ANDROID)
-        
-        # Android specific configuration options
-        set(CONFIGURE_OPENSSL_MODULES ${CONFIGURE_OPENSSL_MODULES} no-hw)
-                
-        # silence warnings about unused arguments (Clang specific)
-        set(CFLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
-        set(CXXFLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
-    
         # required environment configuration is already set (by e.g. ndk) so no need to fiddle around with all the OpenSSL options ...
         if (NOT ANDROID)
             message(FATAL_ERROR "Use NDK cmake toolchain or cmake android autoconfig")
         endif()
         
+        # arch options
         if (ARMEABI_V7A)
             set(OPENSSL_PLATFORM "arm")
             set(CONFIGURE_OPENSSL_PARAMS ${CONFIGURE_OPENSSL_PARAMS} "-march=armv7-a")
@@ -154,10 +148,17 @@ else()
                 set(OPENSSL_PLATFORM ${CMAKE_ANDROID_ARCH_ABI})
             endif()
         endif()
-                
-        # ... but we have to convert all the CMake options to environment variables!
-        set(PATH "${ANDROID_TOOLCHAIN_ROOT}/bin/:${ANDROID_TOOLCHAIN_ROOT}/${ANDROID_TOOLCHAIN_NAME}/bin/")
-        set(LDFLAGS ${CMAKE_MODULE_LINKER_FLAGS})
+        
+        # collect options to pass via ENV to openssl configure
+        set(FORWARD_ANDROID_NDK "${ANDROID_NDK}")
+        # silence warnings about unused arguments (Clang specific)
+        set(FORWARD_CFLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
+        set(FORWARD_CXXFLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
+        set(FORWARD_LDFLAGS "${CMAKE_MODULE_LINKER_FLAGS}")
+        set(FORWARD_PATH "${ANDROID_TOOLCHAIN_ROOT}/bin/:${ANDROID_TOOLCHAIN_ROOT}/${ANDROID_TOOLCHAIN_NAME}/bin/")
+        
+        # Android specific configuration options
+        set(CONFIGURE_OPENSSL_MODULES ${CONFIGURE_OPENSSL_MODULES} no-hw)
         
         set(COMMAND_CONFIGURE ./Configure android-${OPENSSL_PLATFORM} ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
         set(COMMAND_TEST "true")
@@ -165,7 +166,7 @@ else()
         set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
         
         if (NOT COMMAND_TEST)
-            set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} test)
+            set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${MAKE_PROGRAM} test)
         endif()
     endif()
     
@@ -175,17 +176,17 @@ else()
         ${OPENSSL_CHECK_HASH}
         UPDATE_COMMAND ""
 
-        CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
+        CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${COMMAND_CONFIGURE}
         PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/0001-Fix-test_cms-if-DSA-is-not-supported.patch || echo
 
-        BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
+        BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${MAKE_PROGRAM} -j ${NUM_JOBS}
         BUILD_BYPRODUCTS ${OPENSSL_BYPRODUCTS}
 
         TEST_BEFORE_INSTALL 1
         TEST_COMMAND ${COMMAND_TEST}
 
-        INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-        COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} DESTDIR=${OPENSSL_PREFIX} install_sw ${INSTALL_OPENSSL_MAN}
+        INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${PERL_PATH_FIX_INSTALL}
+        COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${MAKE_PROGRAM} DESTDIR=${OPENSSL_PREFIX} install_sw ${INSTALL_OPENSSL_MAN}
         COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
 
         LOG_INSTALL 1
@@ -228,15 +229,14 @@ else()
         ALWAYS ON
     )
 
-    # write environment to file, is picked up by python script
+    # write all "FORWARD_" variables with escaped quotes to file, is picked up by python script
     get_cmake_property(_variableNames VARIABLES)
     foreach (_variableName ${_variableNames})
-        if (NOT _variableName MATCHES "lines")
-            set(OUT_FILE "${OUT_FILE}${_variableName}=\"${${_variableName}}\"\n")
+        if (_variableName MATCHES "^FORWARD_")
+            string(REPLACE "FORWARD_" "" _envName ${_variableName})
+            string(REPLACE "\"" "\\\"" _envValue "${${_variableName}}")
+            set(OUT_FILE "${OUT_FILE}${_envName}=\"${_envValue}\"\n")
         endif()
     endforeach()
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt ${OUT_FILE})
-
-    set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
-    set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
 endif()
