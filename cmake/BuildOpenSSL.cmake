@@ -114,6 +114,14 @@ else()
     if (OPENSSL_DEBUG_BUILD)
         set(CONFIGURE_OPENSSL_PARAMS "${CONFIGURE_OPENSSL_PARAMS} no-asm -g3 -O0 -fno-omit-frame-pointer -fno-inline-functions")
     endif()
+    if (OPENSSL_RPATH)
+        # ridiculous escaping required to pass through cmake, one shell, one makefile and another shell.
+        # \\\\ in shell, \\ in makefile
+        string(REPLACE "\\" "\\\\\\\\" OPENSSL_RPATH_ESCAPED ${OPENSSL_RPATH})
+        # \\$\$ in shell, \$$ in makefile
+        string(REPLACE "\$" "\\\\\$\\\$" OPENSSL_RPATH_ESCAPED ${OPENSSL_RPATH_ESCAPED}) # \$$ in makefile
+        set(CONFIGURE_OPENSSL_PARAMS "${CONFIGURE_OPENSSL_PARAMS} -Wl,-rpath=${OPENSSL_RPATH_ESCAPED}")
+    endif()
     
     # set install command depending of choice on man page generation
     if (OPENSSL_INSTALL_MAN)
