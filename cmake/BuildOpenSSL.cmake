@@ -177,7 +177,10 @@ else()
             set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${MAKE_PROGRAM} test)
         endif()
     endif()
-    
+
+    # build OPENSSL_PATCH_COMMAND
+    include(PatchOpenSSL)
+
     # add openssl target
     ExternalProject_Add(openssl
         URL https://mirror.viaduck.org/openssl/openssl-${OPENSSL_BUILD_VERSION}.tar.gz
@@ -185,7 +188,7 @@ else()
         UPDATE_COMMAND ""
 
         CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${COMMAND_CONFIGURE}
-        PATCH_COMMAND ${PATCH_PROGRAM} -p1 --forward -r - < ${CMAKE_CURRENT_SOURCE_DIR}/patches/0001-Fix-test_cms-if-DSA-is-not-supported.patch || echo
+        ${OPENSSL_PATCH_COMMAND}
 
         BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${MAKE_PROGRAM} -j ${NUM_JOBS}
         BUILD_BYPRODUCTS ${OPENSSL_BYPRODUCTS}
