@@ -55,7 +55,7 @@ else()
     
     # set up prefix
     if (BUILD_OPENSSL)
-        set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/openssl-build/)
+        set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/openssl-build)
     else()
         set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl)
     endif()
