@@ -29,7 +29,7 @@ set(OPENSSL_PATCH_1_VERS "3.0.8..3.1.0")
 
 # fix a failing test, see https://github.com/openssl/openssl/pull/22150
 set(OPENSSL_PATCH_2_FILE ${CMAKE_CURRENT_SOURCE_DIR}/patches/0002-Fix-test_cms-if-DSA-is-not-supported.patch)
-set(OPENSSL_PATCH_2_VERS "3.1.3..")
+set(OPENSSL_PATCH_2_VERS "3.1.3..3.3.4")
 
 # process patches
 
