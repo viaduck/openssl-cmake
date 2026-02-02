@@ -21,7 +21,7 @@
 # SOFTWARE.
 #
 
-set(OPENSSL_PATCH_N 2)
+set(OPENSSL_PATCH_N 3)
 
 # fix a failing test, see https://github.com/openssl/openssl/issues/20249
 set(OPENSSL_PATCH_1_FILE ${CMAKE_CURRENT_SOURCE_DIR}/patches/0001-Fix-failing-cms-test-when-no-des-is-used.patch)
@@ -30,6 +30,10 @@ set(OPENSSL_PATCH_1_VERS "3.0.8..3.1.0")
 # fix a failing test, see https://github.com/openssl/openssl/pull/22150
 set(OPENSSL_PATCH_2_FILE ${CMAKE_CURRENT_SOURCE_DIR}/patches/0002-Fix-test_cms-if-DSA-is-not-supported.patch)
 set(OPENSSL_PATCH_2_VERS "3.1.3..3.3.4")
+
+# fix a missing definition on MinGW, see https://github.com/openssl/openssl/pull/29826
+set(OPENSSL_PATCH_3_FILE ${CMAKE_CURRENT_SOURCE_DIR}/patches/0003-Fix-define-SIO_UDP_NETRESET-explicitly-on-MinGW.patch)
+set(OPENSSL_PATCH_3_VERS "3.5.5")
 
 # process patches
 
