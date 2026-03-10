@@ -157,6 +157,7 @@ else()
         # silence warnings about unused arguments (Clang specific)
         set(FORWARD_CFLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
         set(FORWARD_CXXFLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
+        set(FORWARD_CPPFLAGS "${FORWARD_CXXFLAGS}")
         set(FORWARD_LDFLAGS "${CMAKE_MODULE_LINKER_FLAGS}")
         set(FORWARD_PATH "${ANDROID_TOOLCHAIN_ROOT}/bin/:${ANDROID_TOOLCHAIN_ROOT}/${ANDROID_TOOLCHAIN_NAME}/bin/")
         
