@@ -105,7 +105,7 @@ else()
     set(CONFIGURE_OPENSSL_MODULES ${OPENSSL_MODULES})
 
     # additional configure script parameters
-    set(CONFIGURE_OPENSSL_PARAMS "${CONFIGURE_OPENSSL_PARAMS} --libdir=lib")
+    set(CONFIGURE_OPENSSL_PARAMS "${OPENSSL_PARAMS} --libdir=lib")
     if (OPENSSL_DEBUG_BUILD)
         set(CONFIGURE_OPENSSL_PARAMS "${CONFIGURE_OPENSSL_PARAMS} no-asm -g3 -O0 -fno-omit-frame-pointer -fno-inline-functions")
     endif()
