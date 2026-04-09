@@ -89,7 +89,7 @@ if args.verbose:
 proc = None
 if args.os == 'WIN32':
     # we must emulate a UNIX environment to build openssl using mingw
-    proc = Popen(bash, env=env, cwd=args.cwd, stdin=PIPE, universal_newlines=True)
+    proc = Popen(args.bash, env=env, cwd=args.cwd, stdin=PIPE, universal_newlines=True)
     proc.communicate(input=cmd_line)
 else:
     proc = Popen(cmd_line, env=env, cwd=args.cwd, shell=True)
