@@ -33,7 +33,7 @@ set(OPENSSL_PATCH_2_VERS "3.1.3..3.3.4")
 
 # fix a missing definition on MinGW, see https://github.com/openssl/openssl/pull/29826
 set(OPENSSL_PATCH_3_FILE ${CMAKE_CURRENT_SOURCE_DIR}/patches/0003-Fix-define-SIO_UDP_NETRESET-explicitly-on-MinGW.patch)
-set(OPENSSL_PATCH_3_VERS "3.5.5")
+set(OPENSSL_PATCH_3_VERS "3.5.5..3.5.8")
 
 # process patches
 
